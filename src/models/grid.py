@@ -5,6 +5,7 @@ from src.config import (
     CASE_ROUTE,
     CASE_USINE,
     CASE_VIDE,
+    DIRECTIONS_ORTHOGONALES,
     INDICE_MINIMUM_GRILLE,
     NB_COLONNES,
     NB_LIGNES,
@@ -231,3 +232,74 @@ class Grid:
             return True
         else:
             return False
+
+    def est_case_traversable(
+        self,
+        coordonnee: tuple[int, int],
+        depart: tuple[int, int],
+        arrivee: tuple[int, int],
+    ) -> bool:
+        """Vérifie si une case (col, lig) est traversable pour un trajet donné.
+
+        Une case est traversable si elle est dans la grille et qu'il s'agit
+        soit d'une CASE_ROUTE, soit de la case exacte de départ ou d'arrivée.
+
+        Args:
+            coordonnee: Coordonnée (colonne, ligne) de la case à tester.
+            depart: Coordonnée (colonne, ligne) de départ du trajet.
+            arrivee: Coordonnée (colonne, ligne) d'arrivée du trajet.
+
+        Returns:
+            True si la case peut être empruntée, False sinon.
+        """
+        colonne, ligne = coordonnee
+        if self.est_coordonnee_valide(ligne, colonne):
+            est_borne_trajet: bool = (
+                coordonnee == depart or coordonnee == arrivee
+            )
+            if est_borne_trajet:
+                return True
+            else:
+                if self.est_case_route(ligne, colonne):
+                    return True
+                else:
+                    return False
+        else:
+            return False
+
+    def obtenir_voisins_accessibles(
+        self,
+        coordonnee: tuple[int, int],
+        depart: tuple[int, int],
+        arrivee: tuple[int, int],
+    ) -> list[tuple[int, int]]:
+        """Retourne les voisins orthogonaux accessibles depuis une case.
+
+        Args:
+            coordonnee: Coordonnée (colonne, ligne) de la case courante.
+            depart: Coordonnée (colonne, ligne) de départ du trajet.
+            arrivee: Coordonnée (colonne, ligne) d'arrivée du trajet.
+
+        Returns:
+            Liste des coordonnées (colonne, ligne) des voisins traversables.
+        """
+        colonne_courante, ligne_courante = coordonnee
+        voisins_accessibles: list[tuple[int, int]] = []
+
+        for delta_colonne, delta_ligne in DIRECTIONS_ORTHOGONALES:
+            voisin_colonne: int = colonne_courante + delta_colonne
+            voisin_ligne: int = ligne_courante + delta_ligne
+            coordonnee_voisin: tuple[int, int] = (
+                voisin_colonne,
+                voisin_ligne,
+            )
+            if self.est_case_traversable(
+                coordonnee_voisin,
+                depart,
+                arrivee,
+            ):
+                voisins_accessibles.append(coordonnee_voisin)
+            else:
+                pass
+
+        return voisins_accessibles
