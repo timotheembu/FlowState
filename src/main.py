@@ -33,10 +33,18 @@ def executer_jeu() -> None:
             if evenement.type == pygame.QUIT:
                 en_cours = False
             else:
-                gestionnaire_entrees.gerer_evenement(evenement, grille)
+                if not moteur_jeu.partie_perdue:
+                    gestionnaire_entrees.gerer_evenement(evenement, grille)
+                else:
+                    pass
 
         moteur_jeu.mettre_a_jour()
-        afficheur.afficher(grille, moteur_jeu.voitures)
+        afficheur.afficher(
+            grille,
+            moteur_jeu.voitures,
+            moteur_jeu.score,
+            moteur_jeu.partie_perdue,
+        )
         horloge.tick(FPS)
 
     pygame.quit()
