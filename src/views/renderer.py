@@ -7,6 +7,9 @@ from src.config import (
     COULEUR_CONTOUR_BATIMENT,
     COULEUR_FOND,
     COULEUR_GRILLE,
+    COULEUR_ROUTE,
+    DECALAGE_VOISIN_NEGATIF,
+    DECALAGE_VOISIN_POSITIF,
     EPAISSEUR_CONTOUR_USINE,
     EPAISSEUR_LIGNE_GRILLE,
     FACTEUR_DOUBLE_MARGE,
@@ -14,9 +17,11 @@ from src.config import (
     INCREMENT_BORNE_GRILLE,
     LARGEUR_FENETRE,
     MARGE_MAISON,
+    MARGE_ROUTE,
     MARGE_USINE,
     RAYON_BORDURE_MAISON,
     RAYON_BORDURE_USINE,
+    RAYON_NOEUD_ROUTE,
     TAILLE_CASE,
 )
 from src.models.entity import Maison, Usine
@@ -143,6 +148,121 @@ class Renderer:
                 border_radius=RAYON_BORDURE_USINE,
             )
 
+    def dessiner_connexions_case_route(
+        self,
+        grille: Grid,
+        ligne: int,
+        colonne: int,
+    ) -> None:
+        """Dessine les extensions reliant une route à ses voisins connectables.
+
+        Args:
+            grille: Instance du modèle Grid contenant l'état des cases.
+            ligne: Indice de la ligne de la case de route.
+            colonne: Indice de la colonne de la case de route.
+        """
+        taille_route: int = (
+            TAILLE_CASE - FACTEUR_DOUBLE_MARGE * MARGE_ROUTE
+        )
+        case_x: int = colonne * TAILLE_CASE
+        case_y: int = ligne * TAILLE_CASE
+        centre_x: int = case_x + MARGE_ROUTE
+        centre_y: int = case_y + MARGE_ROUTE
+
+        ligne_haut: int = ligne + DECALAGE_VOISIN_NEGATIF
+        if grille.est_case_connectable_route(ligne_haut, colonne):
+            hauteur_extension_haut: int = MARGE_ROUTE + MARGE_MAISON
+            debut_y_haut: int = case_y - MARGE_MAISON
+            segment_haut: pygame.Rect = pygame.Rect(
+                centre_x,
+                debut_y_haut,
+                taille_route,
+                hauteur_extension_haut,
+            )
+            pygame.draw.rect(self.ecran, COULEUR_ROUTE, segment_haut)
+        else:
+            pass
+
+        ligne_bas: int = ligne + DECALAGE_VOISIN_POSITIF
+        if grille.est_case_connectable_route(ligne_bas, colonne):
+            debut_y_bas: int = centre_y + taille_route
+            hauteur_extension_bas: int = MARGE_ROUTE + MARGE_MAISON
+            segment_bas: pygame.Rect = pygame.Rect(
+                centre_x,
+                debut_y_bas,
+                taille_route,
+                hauteur_extension_bas,
+            )
+            pygame.draw.rect(self.ecran, COULEUR_ROUTE, segment_bas)
+        else:
+            pass
+
+        colonne_gauche: int = colonne + DECALAGE_VOISIN_NEGATIF
+        if grille.est_case_connectable_route(ligne, colonne_gauche):
+            largeur_extension_gauche: int = MARGE_ROUTE + MARGE_MAISON
+            debut_x_gauche: int = case_x - MARGE_MAISON
+            segment_gauche: pygame.Rect = pygame.Rect(
+                debut_x_gauche,
+                centre_y,
+                largeur_extension_gauche,
+                taille_route,
+            )
+            pygame.draw.rect(self.ecran, COULEUR_ROUTE, segment_gauche)
+        else:
+            pass
+
+        colonne_droite: int = colonne + DECALAGE_VOISIN_POSITIF
+        if grille.est_case_connectable_route(ligne, colonne_droite):
+            debut_x_droite: int = centre_x + taille_route
+            largeur_extension_droite: int = MARGE_ROUTE + MARGE_MAISON
+            segment_droite: pygame.Rect = pygame.Rect(
+                debut_x_droite,
+                centre_y,
+                largeur_extension_droite,
+                taille_route,
+            )
+            pygame.draw.rect(self.ecran, COULEUR_ROUTE, segment_droite)
+        else:
+            pass
+
+    def dessiner_routes(self, grille: Grid) -> None:
+        """Dessine tous les segments de route présents sur la grille.
+
+        Args:
+            grille: Instance du modèle Grid à parcourir.
+        """
+        taille_route: int = (
+            TAILLE_CASE - FACTEUR_DOUBLE_MARGE * MARGE_ROUTE
+        )
+        for indice_ligne in range(grille.nb_lignes):
+            for indice_colonne in range(grille.nb_colonnes):
+                if grille.est_case_route(indice_ligne, indice_colonne):
+                    position_x: int = (
+                        indice_colonne * TAILLE_CASE + MARGE_ROUTE
+                    )
+                    position_y: int = (
+                        indice_ligne * TAILLE_CASE + MARGE_ROUTE
+                    )
+                    noeud_route: pygame.Rect = pygame.Rect(
+                        position_x,
+                        position_y,
+                        taille_route,
+                        taille_route,
+                    )
+                    pygame.draw.rect(
+                        self.ecran,
+                        COULEUR_ROUTE,
+                        noeud_route,
+                        border_radius=RAYON_NOEUD_ROUTE,
+                    )
+                    self.dessiner_connexions_case_route(
+                        grille,
+                        indice_ligne,
+                        indice_colonne,
+                    )
+                else:
+                    pass
+
     def afficher(self, grille: Grid) -> None:
         """Effectue le rendu complet d'une frame et met à jour l'écran.
 
@@ -151,6 +271,7 @@ class Renderer:
         """
         self.dessiner_fond()
         self.dessiner_grille(grille)
+        self.dessiner_routes(grille)
         self.dessiner_maisons(grille.maisons)
         self.dessiner_usines(grille.usines)
         pygame.display.flip()

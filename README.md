@@ -18,7 +18,8 @@ FlowState/
 │   │   ├── __init__.py
 │   │   └── renderer.py         # Dessin de la grille et des entités
 │   └── controllers/            # Gestion du temps et des événements utilisateur
-│       └── __init__.py
+│       ├── __init__.py
+│       └── input_handler.py    # Tracé et effacement des routes à la souris
 ├── tests/                      # Tests unitaires
 │   └── __init__.py
 ├── .gitignore

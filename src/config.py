@@ -19,10 +19,12 @@ INCREMENT_BORNE_GRILLE: int = 1
 CASE_VIDE: int = 0
 CASE_MAISON: int = 1
 CASE_USINE: int = 2
+CASE_ROUTE: int = 3
 
 # Couleurs de l'environnement (R, G, B)
 COULEUR_FOND: tuple[int, int, int] = (245, 242, 235)
 COULEUR_GRILLE: tuple[int, int, int] = (220, 216, 208)
+COULEUR_ROUTE: tuple[int, int, int] = (85, 85, 90)
 
 # Palette de couleurs des entités (R, G, B)
 COULEUR_ROUGE: tuple[int, int, int] = (229, 75, 75)
@@ -37,6 +39,19 @@ RAYON_BORDURE_MAISON: int = 5
 MARGE_USINE: int = 2
 RAYON_BORDURE_USINE: int = 4
 EPAISSEUR_CONTOUR_USINE: int = 2
+
+# Paramètres d'affichage et de connexion des routes
+MARGE_ROUTE: int = 10
+RAYON_NOEUD_ROUTE: int = 4
+DECALAGE_VOISIN_NUL: int = 0
+DECALAGE_VOISIN_POSITIF: int = 1
+DECALAGE_VOISIN_NEGATIF: int = -1
+
+# Paramètres des boutons de la souris
+BOUTON_SOURIS_GAUCHE: int = 1
+BOUTON_SOURIS_DROIT: int = 3
+INDICE_BOUTON_GAUCHE: int = 0
+INDICE_BOUTON_DROIT: int = 2
 
 # Positions des bâtiments de test (ligne, colonne, couleur)
 MAISONS_TEST: list[tuple[int, int, tuple[int, int, int]]] = [

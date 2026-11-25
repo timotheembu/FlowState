@@ -10,6 +10,7 @@ from src.config import (
     TITRE_FENETRE,
     USINES_TEST,
 )
+from src.controllers.input_handler import InputHandler
 from src.models.entity import Maison, Usine
 from src.models.grid import Grid
 from src.views.renderer import Renderer
@@ -41,6 +42,7 @@ def executer_jeu() -> None:
     grille: Grid = Grid()
     initialiser_batiments_test(grille)
     afficheur: Renderer = Renderer(ecran)
+    gestionnaire_entrees: InputHandler = InputHandler()
 
     en_cours: bool = True
     while en_cours:
@@ -48,7 +50,7 @@ def executer_jeu() -> None:
             if evenement.type == pygame.QUIT:
                 en_cours = False
             else:
-                en_cours = en_cours
+                gestionnaire_entrees.gerer_evenement(evenement, grille)
 
         afficheur.afficher(grille)
         horloge.tick(FPS)

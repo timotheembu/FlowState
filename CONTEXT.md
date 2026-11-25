@@ -40,14 +40,6 @@ mini-motorways-clone/
 ## 4. Suivi des Étapes (Vibecoding Itératif)
 - [x] **Étape 1 :** Arborescence MVC, configuration, modèle `Grid` et affichage de la grille 30x30.
 - [x] **Étape 2 :** Modèles `Maison` et `Usine`, placement sur la grille et rendu graphique différencié par couleur.
-- [ ] **Étape 3 :** Tracé et effacement des routes à la souris.
-- [ ] **Étape 4 :** Algorithme de pathfinding A\*.
-- [ ] **Étape 5 :** Génération, déplacement des voitures et simulation du trafic.
-```
-
-## 4. Suivi des Étapes (Vibecoding Itératif)
-- [x] **Étape 1 :** Arborescence MVC, configuration, modèle `Grid` et affichage de la grille 30x30.
-- [x] **Étape 2 :** Modèles `Maison` et `Usine`, placement sur la grille et rendu graphique différencié par couleur.
-- [ ] **Étape 3 :** Tracé et effacement des routes à la souris.
+- [x] **Étape 3 :** Tracé et effacement des routes à la souris.
 - [ ] **Étape 4 :** Algorithme de pathfinding A\*.
 - [ ] **Étape 5 :** Génération, déplacement des voitures et simulation du trafic.
