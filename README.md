@@ -28,9 +28,17 @@ FlowState/
 ## Prérequis & Installation
 
 1. Créer et activer un environnement virtuel Python :
+
+   **Sous Linux / macOS :**
    ```bash
    python3 -m venv .venv
    source .venv/bin/activate
+   ```
+
+   **Sous Windows (PowerShell) :**
+   ```powershell
+   python -m venv .venv
+   .\.venv\Scripts\Activate.ps1
    ```
 
 2. Installer les dépendances :
@@ -42,7 +50,12 @@ FlowState/
 
 Depuis la racine du projet :
 
-```bash
-python3 -m src.main
-```
+- **Linux / macOS :**
+  ```bash
+  python3 -m src.main
+  ```
+- **Windows :**
+  ```powershell
+  python -m src.main
+  ```
 
