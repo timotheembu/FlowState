@@ -45,7 +45,7 @@ mini-motorways-clone/
 - [x] **Étape 5 :** Génération, déplacement des voitures et simulation du trafic.
 - [x] **Étape 6 :** Apparition procédurale progressive (carte vide au départ, apparition d'une première paire Maison/Usine de même couleur, puis accélération des apparitions avec maisons isolées pouvant se rattacher à une usine existante de même couleur).
 - [x] **Étape 7 :** Gameplay complet : demandes générées par les Usines (plusieurs usines possibles par couleur), flotte limitée de voitures par Maison effectuant l'aller-retour, routes à double sens, score et défaite (Game Over) si une Usine est saturée.
-- [ ] **Étape 8 :** Routes en diagonale (8 directions dans `Grid`, `InputHandler`, `Pathfinding` A* et `Renderer`) et stock limité de cases de route (remboursé à la suppression).
+- [x] **Étape 8 :** Routes en diagonale (8 directions dans `Grid`, `InputHandler`, `Pathfinding` A* et `Renderer`) et stock limité de cases de route (remboursé à la suppression).
 - [ ] **Étape 9 :** Caméra avec zoom progressif (départ zoomé au centre, dézoom au fur et à mesure de l'expansion) et courbe de difficulté progressive (spawns plus lents au début, bâtiments proches puis éloignés).
 - [ ] **Étape 10 :** Système temporel (horloge visuelle + défilement des jours) et choix hebdomadaire chaque lundi (pause et sélection entre deux lots de routes/bonus : pont, tunnel, feu, rond-point, autoroute).
 - [ ] **Étape 11 :** Mode Édition (touche dédiée pour activer/désactiver le mode construction ; tracé actif uniquement en mode édition et grille masquée en mode jeu normal).

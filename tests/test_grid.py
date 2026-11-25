@@ -17,7 +17,10 @@ from src.config import (
     INDICE_TEST_UN,
     INDICE_TEST_ZERO,
     LONGUEUR_LISTE_VIDE,
+    STOCK_ROUTES_EPUISE,
+    STOCK_TEST_LIMITE,
     TAILLE_GRILLE_TEST,
+    UNITE_STOCK_ROUTE,
 )
 from src.models.entity import Maison, Usine
 from src.models.grid import Grid
@@ -140,3 +143,38 @@ def test_voisins_accessibles_et_traversabilite() -> None:
     assert arrivee in voisins
     assert (INDICE_TEST_DEUX, INDICE_TEST_DEUX) not in voisins
     assert (INDICE_TEST_DEUX, INDICE_TEST_ZERO) not in voisins
+
+
+def test_voisins_diagonaux_et_gestion_stock_routes() -> None:
+    """Vérifie l'accès aux voisins diagonaux et la limite du stock de routes."""
+    grille: Grid = Grid(
+        TAILLE_GRILLE_TEST,
+        TAILLE_GRILLE_TEST,
+        stock_routes_initial=STOCK_TEST_LIMITE,
+    )
+    assert grille.stock_routes == STOCK_TEST_LIMITE
+
+    assert grille.placer_route(INDICE_TEST_UN, INDICE_TEST_UN)
+    assert grille.stock_routes == STOCK_TEST_LIMITE - UNITE_STOCK_ROUTE
+
+    assert grille.placer_route(INDICE_TEST_DEUX, INDICE_TEST_DEUX)
+    assert grille.stock_routes == STOCK_ROUTES_EPUISE
+
+    # Stock épuisé : impossible de poser une troisième route
+    assert not grille.placer_route(INDICE_TEST_TROIS, INDICE_TEST_TROIS)
+    assert not grille.est_case_route(INDICE_TEST_TROIS, INDICE_TEST_TROIS)
+
+    # Les deux routes posées en (1,1) et (2,2) sont voisines en diagonale
+    depart: tuple[int, int] = (INDICE_TEST_ZERO, INDICE_TEST_ZERO)
+    arrivee: tuple[int, int] = (INDICE_TEST_TROIS, INDICE_TEST_TROIS)
+    voisins_un_un: list[tuple[int, int]] = grille.obtenir_voisins_accessibles(
+        (INDICE_TEST_UN, INDICE_TEST_UN),
+        depart,
+        arrivee,
+    )
+    assert (INDICE_TEST_DEUX, INDICE_TEST_DEUX) in voisins_un_un
+    assert depart in voisins_un_un
+
+    # Remboursement du stock à la suppression
+    assert grille.supprimer_route(INDICE_TEST_DEUX, INDICE_TEST_DEUX)
+    assert grille.stock_routes == UNITE_STOCK_ROUTE

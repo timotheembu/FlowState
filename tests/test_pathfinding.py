@@ -98,12 +98,37 @@ def test_contournement_obstacle_et_choix_chemin_plus_court() -> None:
     )
     chemin_court_attendu: list[tuple[int, int]] = [
         (INDICE_TEST_UN, INDICE_TEST_DEUX),
-        (INDICE_TEST_UN, INDICE_TEST_UN),
         (INDICE_TEST_DEUX, INDICE_TEST_UN),
-        (INDICE_TEST_TROIS, INDICE_TEST_UN),
         (INDICE_TEST_TROIS, INDICE_TEST_DEUX),
     ]
     assert chemin == chemin_court_attendu
+
+
+def test_chemin_diagonal_plus_court_que_orthogonal() -> None:
+    """Vérifie qu'A* privilégie une diagonale au lieu d'un détour orthogonal."""
+    grille: Grid = Grid(TAILLE_GRILLE_TEST, TAILLE_GRILLE_TEST)
+    maison: Maison = Maison(INDICE_TEST_UN, INDICE_TEST_UN, COULEUR_ROUGE)
+    usine: Usine = Usine(INDICE_TEST_TROIS, INDICE_TEST_TROIS, COULEUR_ROUGE)
+    grille.placer_maison(maison)
+    grille.placer_usine(usine)
+
+    # Route centrale en diagonale (2, 2) + routes orthogonales (1, 2) et (2, 3)
+    grille.placer_route(INDICE_TEST_DEUX, INDICE_TEST_DEUX)
+    grille.placer_route(INDICE_TEST_UN, INDICE_TEST_DEUX)
+    grille.placer_route(INDICE_TEST_DEUX, INDICE_TEST_TROIS)
+
+    depart: tuple[int, int] = (INDICE_TEST_UN, INDICE_TEST_UN)
+    arrivee: tuple[int, int] = (INDICE_TEST_TROIS, INDICE_TEST_TROIS)
+    chemin: list[tuple[int, int]] = trouver_chemin_a_etoile(
+        grille,
+        depart,
+        arrivee,
+    )
+    assert chemin == [
+        (INDICE_TEST_UN, INDICE_TEST_UN),
+        (INDICE_TEST_DEUX, INDICE_TEST_DEUX),
+        (INDICE_TEST_TROIS, INDICE_TEST_TROIS),
+    ]
 
 
 def test_reseau_deconnecte_ou_bloque() -> None:

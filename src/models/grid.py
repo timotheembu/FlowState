@@ -5,7 +5,7 @@ from src.config import (
     CASE_ROUTE,
     CASE_USINE,
     CASE_VIDE,
-    DIRECTIONS_ORTHOGONALES,
+    DIRECTIONS_HUIT_VOISINS,
     DISTANCE_MIN_ENTRE_BATIMENTS,
     DISTANCE_MIN_SECOURS_BATIMENT,
     INDICE_MINIMUM_GRILLE,
@@ -14,6 +14,9 @@ from src.config import (
     MARGE_BORDURE_NULLE,
     NB_COLONNES,
     NB_LIGNES,
+    STOCK_ROUTES_EPUISE,
+    STOCK_ROUTES_INITIAL,
+    UNITE_STOCK_ROUTE,
 )
 from src.models.entity import Maison, Usine
 
@@ -25,15 +28,19 @@ class Grid:
         self,
         nb_lignes: int = NB_LIGNES,
         nb_colonnes: int = NB_COLONNES,
+        stock_routes_initial: int = STOCK_ROUTES_INITIAL,
     ) -> None:
-        """Initialise la grille avec des cases vides et sans bâtiment.
+        """Initialise la grille avec des cases vides et un stock de routes.
 
         Args:
             nb_lignes: Nombre de lignes de la grille.
             nb_colonnes: Nombre de colonnes de la grille.
+            stock_routes_initial: Stock initial de cases de route disponibles.
         """
         self.nb_lignes: int = nb_lignes
         self.nb_colonnes: int = nb_colonnes
+        self.stock_routes_initial: int = stock_routes_initial
+        self.stock_routes: int = stock_routes_initial
         self.matrice: list[list[int]] = []
         self.maisons: list[Maison] = []
         self.usines: list[Usine] = []
@@ -50,6 +57,7 @@ class Grid:
         self.matrice = nouvelle_matrice
         self.maisons = []
         self.usines = []
+        self.stock_routes = self.stock_routes_initial
 
     def est_coordonnee_valide(self, ligne: int, colonne: int) -> bool:
         """Vérifie si une coordonnée (ligne, colonne) est dans la grille.
@@ -207,7 +215,7 @@ class Grid:
             return False
 
     def placer_route(self, ligne: int, colonne: int) -> bool:
-        """Place un segment de route uniquement si la case cible est vide.
+        """Place un segment de route si la case est vide et le stock suffisant.
 
         Args:
             ligne: Indice de la ligne où poser la route.
@@ -216,14 +224,16 @@ class Grid:
         Returns:
             True si la route a été posée, False sinon.
         """
-        if self.est_case_libre(ligne, colonne):
+        stock_disponible: bool = self.stock_routes > STOCK_ROUTES_EPUISE
+        if stock_disponible and self.est_case_libre(ligne, colonne):
             self.definir_etat_case(ligne, colonne, CASE_ROUTE)
+            self.stock_routes = self.stock_routes - UNITE_STOCK_ROUTE
             return True
         else:
             return False
 
     def supprimer_route(self, ligne: int, colonne: int) -> bool:
-        """Supprime un segment de route sans jamais écraser un bâtiment.
+        """Supprime un segment de route et rembourse le stock de routes.
 
         Args:
             ligne: Indice de la ligne où supprimer la route.
@@ -234,6 +244,7 @@ class Grid:
         """
         if self.est_case_route(ligne, colonne):
             self.definir_etat_case(ligne, colonne, CASE_VIDE)
+            self.stock_routes = self.stock_routes + UNITE_STOCK_ROUTE
             return True
         else:
             return False
@@ -278,7 +289,7 @@ class Grid:
         depart: tuple[int, int],
         arrivee: tuple[int, int],
     ) -> list[tuple[int, int]]:
-        """Retourne les voisins orthogonaux accessibles depuis une case.
+        """Retourne les 8 voisins (orthogonaux et diagonaux) accessibles.
 
         Args:
             coordonnee: Coordonnée (colonne, ligne) de la case courante.
@@ -291,7 +302,7 @@ class Grid:
         colonne_courante, ligne_courante = coordonnee
         voisins_accessibles: list[tuple[int, int]] = []
 
-        for delta_colonne, delta_ligne in DIRECTIONS_ORTHOGONALES:
+        for delta_colonne, delta_ligne in DIRECTIONS_HUIT_VOISINS:
             voisin_colonne: int = colonne_courante + delta_colonne
             voisin_ligne: int = ligne_courante + delta_ligne
             coordonnee_voisin: tuple[int, int] = (

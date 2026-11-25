@@ -21,16 +21,20 @@ from src.config import (
     DECALAGE_VOIE_DROITE_PIXELS,
     DECALAGE_VOISIN_NEGATIF,
     DECALAGE_VOISIN_POSITIF,
+    DIRECTIONS_DIAGONALES,
     DIVISEUR_MOITIE,
     EPAISSEUR_CONTOUR_INTERFACE,
     EPAISSEUR_CONTOUR_USINE,
     EPAISSEUR_LIGNE_GRILLE,
+    EPAISSEUR_SEGMENT_DIAGONAL,
     ESPACEMENT_INDICATEUR_DEMANDE,
     FACTEUR_DOUBLE_MARGE,
+    HAUTEUR_BANDEAU_ROUTES,
     HAUTEUR_BANDEAU_SCORE,
     HAUTEUR_FENETRE,
     HAUTEUR_PANNEAU_DEFAITE,
     INCREMENT_BORNE_GRILLE,
+    LARGEUR_BANDEAU_ROUTES,
     LARGEUR_BANDEAU_SCORE,
     LARGEUR_FENETRE,
     LARGEUR_PANNEAU_DEFAITE,
@@ -39,6 +43,8 @@ from src.config import (
     MARGE_ROUTE,
     MARGE_USINE,
     NB_COLONNES_GRILLE_DEMANDES,
+    POSITION_BANDEAU_ROUTES_X,
+    POSITION_BANDEAU_ROUTES_Y,
     POSITION_BANDEAU_SCORE_X,
     POSITION_BANDEAU_SCORE_Y,
     RAYON_BORDURE_INTERFACE,
@@ -318,6 +324,43 @@ class Renderer:
         else:
             pass
 
+        centre_case_x: int = int(
+            (float(colonne) + DECALAGE_CENTRE_CASE) * TAILLE_CASE
+        )
+        centre_case_y: int = int(
+            (float(ligne) + DECALAGE_CENTRE_CASE) * TAILLE_CASE
+        )
+        point_centre_case: tuple[int, int] = (centre_case_x, centre_case_y)
+
+        for delta_colonne, delta_ligne in DIRECTIONS_DIAGONALES:
+            voisin_ligne: int = ligne + delta_ligne
+            voisin_colonne: int = colonne + delta_colonne
+            if grille.est_case_connectable_route(
+                voisin_ligne,
+                voisin_colonne,
+            ):
+                centre_voisin_x: int = int(
+                    (float(voisin_colonne) + DECALAGE_CENTRE_CASE)
+                    * TAILLE_CASE
+                )
+                centre_voisin_y: int = int(
+                    (float(voisin_ligne) + DECALAGE_CENTRE_CASE)
+                    * TAILLE_CASE
+                )
+                point_centre_voisin: tuple[int, int] = (
+                    centre_voisin_x,
+                    centre_voisin_y,
+                )
+                pygame.draw.line(
+                    self.ecran,
+                    COULEUR_ROUTE,
+                    point_centre_case,
+                    point_centre_voisin,
+                    EPAISSEUR_SEGMENT_DIAGONAL,
+                )
+            else:
+                pass
+
     def dessiner_routes(self, grille: Grid) -> None:
         """Dessine tous les segments de route présents sur la grille.
 
@@ -429,6 +472,41 @@ class Renderer:
         )
         self.ecran.blit(surface_texte, rectangle_texte)
 
+    def dessiner_bandeau_routes(self, stock_routes: int) -> None:
+        """Affiche le stock de cases de route disponibles en haut de l'écran.
+
+        Args:
+            stock_routes: Nombre de cases de route restantes dans l'inventaire.
+        """
+        rectangle_bandeau: pygame.Rect = pygame.Rect(
+            POSITION_BANDEAU_ROUTES_X,
+            POSITION_BANDEAU_ROUTES_Y,
+            LARGEUR_BANDEAU_ROUTES,
+            HAUTEUR_BANDEAU_ROUTES,
+        )
+        pygame.draw.rect(
+            self.ecran,
+            COULEUR_FOND_BANDEAU_SCORE,
+            rectangle_bandeau,
+            border_radius=RAYON_BORDURE_INTERFACE,
+        )
+        pygame.draw.rect(
+            self.ecran,
+            COULEUR_CONTOUR_BATIMENT,
+            rectangle_bandeau,
+            width=EPAISSEUR_CONTOUR_INTERFACE,
+            border_radius=RAYON_BORDURE_INTERFACE,
+        )
+        surface_texte: pygame.Surface = self.police_score.render(
+            f"Routes : {stock_routes}",
+            True,
+            COULEUR_TEXTE_INTERFACE,
+        )
+        rectangle_texte: pygame.Rect = surface_texte.get_rect(
+            center=rectangle_bandeau.center
+        )
+        self.ecran.blit(surface_texte, rectangle_texte)
+
     def dessiner_ecran_defaite(self, score: int) -> None:
         """Affiche le panneau central de Partie Perdue avec le score final.
 
@@ -516,6 +594,7 @@ class Renderer:
         else:
             pass
         self.dessiner_bandeau_score(score)
+        self.dessiner_bandeau_routes(grille.stock_routes)
         if partie_perdue:
             self.dessiner_ecran_defaite(score)
         else:

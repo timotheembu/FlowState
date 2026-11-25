@@ -3,8 +3,10 @@
 import heapq
 
 from src.config import (
-    COUT_DEPLACEMENT_VOISIN,
+    COUT_DIAGONALE,
     COUT_INITIAL_CHEMIN,
+    COUT_INITIAL_CHEMIN_FLOAT,
+    COUT_ORTHOGONAL,
     PAS_INCREMENT_COMPTEUR,
 )
 from src.models.grid import Grid
@@ -28,6 +30,66 @@ def calculer_distance_manhattan(
     ecart_colonne: int = abs(colonne_a - colonne_b)
     ecart_ligne: int = abs(ligne_a - ligne_b)
     return ecart_colonne + ecart_ligne
+
+
+def calculer_heuristique_octile(
+    point_a: tuple[int, int],
+    point_b: tuple[int, int],
+) -> float:
+    """Calcule la distance octile adaptée aux déplacements en 8 directions.
+
+    Args:
+        point_a: Première coordonnée (colonne, ligne).
+        point_b: Seconde coordonnée (colonne, ligne).
+
+    Returns:
+        Estimation flottante admissible du coût entre point_a et point_b.
+    """
+    colonne_a, ligne_a = point_a
+    colonne_b, ligne_b = point_b
+    ecart_colonne: int = abs(colonne_a - colonne_b)
+    ecart_ligne: int = abs(ligne_a - ligne_b)
+
+    if ecart_colonne < ecart_ligne:
+        pas_diagonaux: int = ecart_colonne
+        pas_orthogonaux: int = ecart_ligne - ecart_colonne
+    else:
+        pas_diagonaux = ecart_ligne
+        pas_orthogonaux = ecart_colonne - ecart_ligne
+
+    cout_estime: float = (
+        float(pas_diagonaux) * COUT_DIAGONALE
+        + float(pas_orthogonaux) * COUT_ORTHOGONAL
+    )
+    return cout_estime
+
+
+def calculer_cout_deplacement(
+    noeud_source: tuple[int, int],
+    noeud_cible: tuple[int, int],
+) -> float:
+    """Détermine le coût d'un pas orthogonal ou diagonal entre deux cases.
+
+    Args:
+        noeud_source: Coordonnée (colonne, ligne) de départ du pas.
+        noeud_cible: Coordonnée (colonne, ligne) d'arrivée du pas.
+
+    Returns:
+        COUT_DIAGONALE si le déplacement est diagonal, COUT_ORTHOGONAL sinon.
+    """
+    colonne_source, ligne_source = noeud_source
+    colonne_cible, ligne_cible = noeud_cible
+    ecart_colonne: int = abs(colonne_cible - colonne_source)
+    ecart_ligne: int = abs(ligne_cible - ligne_source)
+
+    est_diagonal: bool = (
+        ecart_colonne == PAS_INCREMENT_COMPTEUR
+        and ecart_ligne == PAS_INCREMENT_COMPTEUR
+    )
+    if est_diagonal:
+        return COUT_DIAGONALE
+    else:
+        return COUT_ORTHOGONAL
 
 
 def reconstruire_chemin(
@@ -61,7 +123,7 @@ def trouver_chemin_a_etoile(
     depart: tuple[int, int],
     arrivee: tuple[int, int],
 ) -> list[tuple[int, int]]:
-    """Recherche le plus court chemin entre depart et arrivee via A*.
+    """Recherche le plus court chemin (8 directions) entre depart et arrivee.
 
     Args:
         grille: Instance du modèle Grid sur laquelle chercher le chemin.
@@ -95,9 +157,12 @@ def trouver_chemin_a_etoile(
     else:
         pass
 
-    file_ouverte: list[tuple[int, int, tuple[int, int]]] = []
+    file_ouverte: list[tuple[float, int, tuple[int, int]]] = []
     compteur_insertion: int = COUT_INITIAL_CHEMIN
-    heuristique_initiale: int = calculer_distance_manhattan(depart, arrivee)
+    heuristique_initiale: float = calculer_heuristique_octile(
+        depart,
+        arrivee,
+    )
 
     heapq.heappush(
         file_ouverte,
@@ -105,7 +170,9 @@ def trouver_chemin_a_etoile(
     )
 
     parents: dict[tuple[int, int], tuple[int, int]] = {}
-    couts_g: dict[tuple[int, int], int] = {depart: COUT_INITIAL_CHEMIN}
+    couts_g: dict[tuple[int, int], float] = {
+        depart: COUT_INITIAL_CHEMIN_FLOAT,
+    }
     ensemble_ferme: set[tuple[int, int]] = set()
 
     while len(file_ouverte) > COUT_INITIAL_CHEMIN:
@@ -133,9 +200,11 @@ def trouver_chemin_a_etoile(
             else:
                 pass
 
-            nouveau_cout_g: int = (
-                couts_g[noeud_courant] + COUT_DEPLACEMENT_VOISIN
+            cout_pas: float = calculer_cout_deplacement(
+                noeud_courant,
+                voisin,
             )
+            nouveau_cout_g: float = couts_g[noeud_courant] + cout_pas
             voisin_deja_connu: bool = voisin in couts_g
 
             est_meilleur_chemin: bool = False
@@ -150,9 +219,9 @@ def trouver_chemin_a_etoile(
             if est_meilleur_chemin:
                 parents[voisin] = noeud_courant
                 couts_g[voisin] = nouveau_cout_g
-                score_f: int = nouveau_cout_g + calculer_distance_manhattan(
-                    voisin,
-                    arrivee,
+                score_f: float = (
+                    nouveau_cout_g
+                    + calculer_heuristique_octile(voisin, arrivee)
                 )
                 compteur_insertion = (
                     compteur_insertion + PAS_INCREMENT_COMPTEUR

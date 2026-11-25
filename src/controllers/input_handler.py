@@ -5,6 +5,9 @@ import pygame
 from src.config import (
     BOUTON_SOURIS_DROIT,
     BOUTON_SOURIS_GAUCHE,
+    DECALAGE_VOISIN_NEGATIF,
+    DECALAGE_VOISIN_NUL,
+    DECALAGE_VOISIN_POSITIF,
     INDICE_BOUTON_DROIT,
     INDICE_BOUTON_GAUCHE,
     TAILLE_CASE,
@@ -14,6 +17,10 @@ from src.models.grid import Grid
 
 class InputHandler:
     """Traduit les événements souris en actions de tracé ou d'effacement."""
+
+    def __init__(self) -> None:
+        """Initialise le gestionnaire d'entrées et la mémoire de tracé."""
+        self.derniere_case_tracee: tuple[int, int] | None = None
 
     def convertir_pixels_en_case(
         self,
@@ -33,13 +40,66 @@ class InputHandler:
         ligne: int = position_y // TAILLE_CASE
         return (colonne, ligne)
 
+    def calculer_pas_unitaire(self, ecart: int) -> int:
+        """Retourne le signe unitaire (-1, 0 ou 1) d'un écart de coordonnées.
+
+        Args:
+            ecart: Différence entière entre deux indices.
+
+        Returns:
+            -1 si négatif, 1 si positif, 0 si nul.
+        """
+        if ecart > DECALAGE_VOISIN_NUL:
+            return DECALAGE_VOISIN_POSITIF
+        else:
+            if ecart < DECALAGE_VOISIN_NUL:
+                return DECALAGE_VOISIN_NEGATIF
+            else:
+                return DECALAGE_VOISIN_NUL
+
+    def interpoler_action_entre_cases(
+        self,
+        grille: Grid,
+        case_depart: tuple[int, int],
+        case_arrivee: tuple[int, int],
+        est_suppression: bool,
+    ) -> None:
+        """Applique le tracé ou la suppression en continu (incluant diagonales).
+
+        Args:
+            grille: Instance du modèle Grid à modifier.
+            case_depart: Coordonnée (colonne, ligne) précédente.
+            case_arrivee: Coordonnée (colonne, ligne) actuelle.
+            est_suppression: True pour supprimer, False pour poser une route.
+        """
+        colonne_courante, ligne_courante = case_depart
+        colonne_cible, ligne_cible = case_arrivee
+
+        while (
+            colonne_courante != colonne_cible
+            or ligne_courante != ligne_cible
+        ):
+            pas_colonne: int = self.calculer_pas_unitaire(
+                colonne_cible - colonne_courante
+            )
+            pas_ligne: int = self.calculer_pas_unitaire(
+                ligne_cible - ligne_courante
+            )
+            colonne_courante = colonne_courante + pas_colonne
+            ligne_courante = ligne_courante + pas_ligne
+
+            if est_suppression:
+                grille.supprimer_route(ligne_courante, colonne_courante)
+            else:
+                grille.placer_route(ligne_courante, colonne_courante)
+
     def appliquer_action_clic_gauche(
         self,
         grille: Grid,
         position_x: int,
         position_y: int,
     ) -> None:
-        """Trace une route sur la case correspondant à la position de la souris.
+        """Trace une route (avec interpolation diagonale) sous la souris.
 
         Args:
             grille: Instance du modèle Grid à modifier.
@@ -47,7 +107,18 @@ class InputHandler:
             position_y: Coordonnée verticale en pixels.
         """
         colonne, ligne = self.convertir_pixels_en_case(position_x, position_y)
-        grille.placer_route(ligne, colonne)
+        case_actuelle: tuple[int, int] = (colonne, ligne)
+
+        if self.derniere_case_tracee is None:
+            grille.placer_route(ligne, colonne)
+        else:
+            self.interpoler_action_entre_cases(
+                grille,
+                self.derniere_case_tracee,
+                case_actuelle,
+                est_suppression=False,
+            )
+        self.derniere_case_tracee = case_actuelle
 
     def appliquer_action_clic_droit(
         self,
@@ -55,7 +126,7 @@ class InputHandler:
         position_x: int,
         position_y: int,
     ) -> None:
-        """Efface une route sur la case correspondant à la position de la souris.
+        """Efface une route (avec interpolation diagonale) sous la souris.
 
         Args:
             grille: Instance du modèle Grid à modifier.
@@ -63,7 +134,18 @@ class InputHandler:
             position_y: Coordonnée verticale en pixels.
         """
         colonne, ligne = self.convertir_pixels_en_case(position_x, position_y)
-        grille.supprimer_route(ligne, colonne)
+        case_actuelle: tuple[int, int] = (colonne, ligne)
+
+        if self.derniere_case_tracee is None:
+            grille.supprimer_route(ligne, colonne)
+        else:
+            self.interpoler_action_entre_cases(
+                grille,
+                self.derniere_case_tracee,
+                case_actuelle,
+                est_suppression=True,
+            )
+        self.derniere_case_tracee = case_actuelle
 
     def gerer_evenement(
         self,
@@ -77,6 +159,7 @@ class InputHandler:
             grille: Instance du modèle Grid sur laquelle agir.
         """
         if evenement.type == pygame.MOUSEBUTTONDOWN:
+            self.derniere_case_tracee = None
             position_x, position_y = evenement.pos
             if evenement.button == BOUTON_SOURIS_GAUCHE:
                 self.appliquer_action_clic_gauche(
@@ -94,25 +177,28 @@ class InputHandler:
                 else:
                     pass
         else:
-            if evenement.type == pygame.MOUSEMOTION:
-                position_x, position_y = evenement.pos
-                boutons_presses: tuple[bool, bool, bool] = (
-                    pygame.mouse.get_pressed()
-                )
-                if boutons_presses[INDICE_BOUTON_GAUCHE]:
-                    self.appliquer_action_clic_gauche(
-                        grille,
-                        position_x,
-                        position_y,
+            if evenement.type == pygame.MOUSEBUTTONUP:
+                self.derniere_case_tracee = None
+            else:
+                if evenement.type == pygame.MOUSEMOTION:
+                    position_x, position_y = evenement.pos
+                    boutons_presses: tuple[bool, bool, bool] = (
+                        pygame.mouse.get_pressed()
                     )
-                else:
-                    if boutons_presses[INDICE_BOUTON_DROIT]:
-                        self.appliquer_action_clic_droit(
+                    if boutons_presses[INDICE_BOUTON_GAUCHE]:
+                        self.appliquer_action_clic_gauche(
                             grille,
                             position_x,
                             position_y,
                         )
                     else:
-                        pass
-            else:
-                pass
+                        if boutons_presses[INDICE_BOUTON_DROIT]:
+                            self.appliquer_action_clic_droit(
+                                grille,
+                                position_x,
+                                position_y,
+                            )
+                        else:
+                            self.derniere_case_tracee = None
+                else:
+                    pass
