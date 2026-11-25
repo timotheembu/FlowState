@@ -1,17 +1,25 @@
-"""Vue chargée du rendu graphique Pygame de la grille."""
+"""Vue chargée du rendu graphique Pygame de la grille et des bâtiments."""
 
 import pygame
 
 from src.config import (
     COORDONNEE_ORIGINE,
+    COULEUR_CONTOUR_BATIMENT,
     COULEUR_FOND,
     COULEUR_GRILLE,
+    EPAISSEUR_CONTOUR_USINE,
     EPAISSEUR_LIGNE_GRILLE,
+    FACTEUR_DOUBLE_MARGE,
     HAUTEUR_FENETRE,
     INCREMENT_BORNE_GRILLE,
     LARGEUR_FENETRE,
+    MARGE_MAISON,
+    MARGE_USINE,
+    RAYON_BORDURE_MAISON,
+    RAYON_BORDURE_USINE,
     TAILLE_CASE,
 )
+from src.models.entity import Maison, Usine
 from src.models.grid import Grid
 
 
@@ -78,6 +86,63 @@ class Renderer:
                 EPAISSEUR_LIGNE_GRILLE,
             )
 
+    def dessiner_maisons(self, maisons: list[Maison]) -> None:
+        """Dessine chaque maison sous forme de petit carré plein arrondi.
+
+        Args:
+            maisons: Liste des instances de Maison à dessiner.
+        """
+        taille_maison: int = (
+            TAILLE_CASE - FACTEUR_DOUBLE_MARGE * MARGE_MAISON
+        )
+        for maison in maisons:
+            position_x: int = maison.colonne * TAILLE_CASE + MARGE_MAISON
+            position_y: int = maison.ligne * TAILLE_CASE + MARGE_MAISON
+            rectangle_maison: pygame.Rect = pygame.Rect(
+                position_x,
+                position_y,
+                taille_maison,
+                taille_maison,
+            )
+            pygame.draw.rect(
+                self.ecran,
+                maison.couleur,
+                rectangle_maison,
+                border_radius=RAYON_BORDURE_MAISON,
+            )
+
+    def dessiner_usines(self, usines: list[Usine]) -> None:
+        """Dessine chaque usine sous forme de grand carré bordé.
+
+        Args:
+            usines: Liste des instances de Usine à dessiner.
+        """
+        taille_usine: int = (
+            TAILLE_CASE - FACTEUR_DOUBLE_MARGE * MARGE_USINE
+        )
+        for usine in usines:
+            position_x: int = usine.colonne * TAILLE_CASE + MARGE_USINE
+            position_y: int = usine.ligne * TAILLE_CASE + MARGE_USINE
+            rectangle_usine: pygame.Rect = pygame.Rect(
+                position_x,
+                position_y,
+                taille_usine,
+                taille_usine,
+            )
+            pygame.draw.rect(
+                self.ecran,
+                usine.couleur,
+                rectangle_usine,
+                border_radius=RAYON_BORDURE_USINE,
+            )
+            pygame.draw.rect(
+                self.ecran,
+                COULEUR_CONTOUR_BATIMENT,
+                rectangle_usine,
+                width=EPAISSEUR_CONTOUR_USINE,
+                border_radius=RAYON_BORDURE_USINE,
+            )
+
     def afficher(self, grille: Grid) -> None:
         """Effectue le rendu complet d'une frame et met à jour l'écran.
 
@@ -86,4 +151,6 @@ class Renderer:
         """
         self.dessiner_fond()
         self.dessiner_grille(grille)
+        self.dessiner_maisons(grille.maisons)
+        self.dessiner_usines(grille.usines)
         pygame.display.flip()

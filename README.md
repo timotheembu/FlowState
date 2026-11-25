@@ -12,7 +12,8 @@ FlowState/
 │   ├── config.py               # Centralisation de toutes les constantes
 │   ├── models/                 # Logique métier pure (aucun import de pygame)
 │   │   ├── __init__.py
-│   │   └── grid.py             # Matrice spatiale et état des cases
+│   │   ├── grid.py             # Matrice spatiale et état des cases
+│   │   └── entity.py           # Classes Maison et Usine
 │   ├── views/                  # Rendu graphique Pygame uniquement
 │   │   ├── __init__.py
 │   │   └── renderer.py         # Dessin de la grille et des entités
@@ -45,4 +46,3 @@ Depuis la racine du projet :
 ```bash
 python3 -m src.main
 ```
-
