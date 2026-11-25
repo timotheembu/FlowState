@@ -30,7 +30,16 @@ COULEUR_ROUTE: tuple[int, int, int] = (85, 85, 90)
 COULEUR_ROUGE: tuple[int, int, int] = (229, 75, 75)
 COULEUR_BLEUE: tuple[int, int, int] = (65, 131, 215)
 COULEUR_JAUNE: tuple[int, int, int] = (245, 190, 55)
+COULEUR_VERTE: tuple[int, int, int] = (72, 187, 120)
+COULEUR_VIOLETTE: tuple[int, int, int] = (159, 122, 234)
 COULEUR_CONTOUR_BATIMENT: tuple[int, int, int] = (60, 60, 60)
+PALETTE_COULEURS_BATIMENTS: list[tuple[int, int, int]] = [
+    COULEUR_ROUGE,
+    COULEUR_BLEUE,
+    COULEUR_JAUNE,
+    COULEUR_VERTE,
+    COULEUR_VIOLETTE,
+]
 
 # Paramètres d'affichage des bâtiments dans une case
 FACTEUR_DOUBLE_MARGE: int = 2
@@ -93,17 +102,13 @@ BOUTON_SOURIS_DROIT: int = 3
 INDICE_BOUTON_GAUCHE: int = 0
 INDICE_BOUTON_DROIT: int = 2
 
-# Positions des bâtiments de test (ligne, colonne, couleur)
-MAISONS_TEST: list[tuple[int, int, tuple[int, int, int]]] = [
-    (4, 4, COULEUR_ROUGE),
-    (5, 6, COULEUR_ROUGE),
-    (12, 3, COULEUR_BLEUE),
-    (14, 5, COULEUR_BLEUE),
-    (22, 7, COULEUR_JAUNE),
-]
-
-USINES_TEST: list[tuple[int, int, tuple[int, int, int]]] = [
-    (6, 22, COULEUR_ROUGE),
-    (15, 24, COULEUR_BLEUE),
-    (23, 20, COULEUR_JAUNE),
-]
+# Paramètres d'apparition procédurale progressive des bâtiments
+DELAI_APPARITION_INITIALE_PAIRE: int = 30
+INTERVALLE_INITIAL_APPARITION_BATIMENT: int = 360
+INTERVALLE_MINIMUM_APPARITION_BATIMENT: int = 120
+FACTEUR_ACCELERATION_APPARITION: float = 0.92
+PROBABILITE_MAISON_SEULE: float = 0.65
+MARGE_BORDURE_APPARITION: int = 1
+DISTANCE_MIN_ENTRE_BATIMENTS: int = 2
+DISTANCE_MIN_SECOURS_BATIMENT: int = 1
+MARGE_BORDURE_NULLE: int = 0

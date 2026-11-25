@@ -43,3 +43,9 @@ mini-motorways-clone/
 - [x] **Étape 3 :** Tracé et effacement des routes à la souris.
 - [x] **Étape 4 :** Algorithme de pathfinding A\*.
 - [x] **Étape 5 :** Génération, déplacement des voitures et simulation du trafic.
+- [x] **Étape 6 :** Apparition procédurale progressive (carte vide au départ, apparition d'une première paire Maison/Usine de même couleur, puis accélération des apparitions avec maisons isolées pouvant se rattacher à une usine existante de même couleur).
+- [ ] **Étape 7 :** Gameplay complet : demandes générées par les Usines (plusieurs usines possibles par couleur), flotte limitée de voitures par Maison effectuant l'aller-retour, routes à double sens, score et défaite (Game Over) si une Usine est saturée.
+- [ ] **Étape 8 :** Mode Édition (touche dédiée pour activer/désactiver le mode construction ; le tracé/gommage des routes n'est actif qu'en mode édition et la grille devient invisible en mode jeu normal).
+- [ ] **Étape 9 :** Équilibrage du rythme des demandes, des vitesses et de la difficulté dans `config.py`.
+- [ ] **Étape 10 :** Génération et sélection de cartes avec obstacles naturels (`CASE_EAU`, `CASE_MONTAGNE`) empêchant la construction de routes classiques.
+- [ ] **Étape 11 :** Infrastructures spéciales : construction de Ponts (sur `CASE_EAU`) et de Tunnels (sous `CASE_MONTAGNE`) avec gestion d'un stock limité.

@@ -6,7 +6,12 @@ from src.config import (
     CASE_USINE,
     CASE_VIDE,
     DIRECTIONS_ORTHOGONALES,
+    DISTANCE_MIN_ENTRE_BATIMENTS,
+    DISTANCE_MIN_SECOURS_BATIMENT,
     INDICE_MINIMUM_GRILLE,
+    LONGUEUR_LISTE_VIDE,
+    MARGE_BORDURE_APPARITION,
+    MARGE_BORDURE_NULLE,
     NB_COLONNES,
     NB_LIGNES,
 )
@@ -303,3 +308,117 @@ class Grid:
                 pass
 
         return voisins_accessibles
+
+    def est_eloignee_des_batiments(
+        self,
+        ligne: int,
+        colonne: int,
+        marge_minimale: int,
+    ) -> bool:
+        """Vérifie qu'une case respecte une distance minimale des bâtiments.
+
+        Args:
+            ligne: Indice de la ligne à tester.
+            colonne: Indice de la colonne à tester.
+            marge_minimale: Écart minimum requis en lignes ou colonnes.
+
+        Returns:
+            True si aucun bâtiment n'est dans le périmètre, False sinon.
+        """
+        for maison in self.maisons:
+            ecart_ligne_maison: int = abs(ligne - maison.ligne)
+            ecart_colonne_maison: int = abs(colonne - maison.colonne)
+            trop_proche_maison: bool = (
+                ecart_ligne_maison < marge_minimale
+                and ecart_colonne_maison < marge_minimale
+            )
+            if trop_proche_maison:
+                return False
+            else:
+                pass
+
+        for usine in self.usines:
+            ecart_ligne_usine: int = abs(ligne - usine.ligne)
+            ecart_colonne_usine: int = abs(colonne - usine.colonne)
+            trop_proche_usine: bool = (
+                ecart_ligne_usine < marge_minimale
+                and ecart_colonne_usine < marge_minimale
+            )
+            if trop_proche_usine:
+                return False
+            else:
+                pass
+
+        return True
+
+    def collecter_cases_libres_avec_marges(
+        self,
+        marge_batiments: int,
+        marge_bordure: int,
+    ) -> list[tuple[int, int]]:
+        """Liste les cases vides respectant les marges de bordure et bâtiments.
+
+        Args:
+            marge_batiments: Distance minimale autour des bâtiments existants.
+            marge_bordure: Marge minimale par rapport aux bords de la grille.
+
+        Returns:
+            Liste des coordonnées (ligne, colonne) éligibles.
+        """
+        cases_eligibles: list[tuple[int, int]] = []
+        ligne_debut: int = INDICE_MINIMUM_GRILLE + marge_bordure
+        ligne_fin: int = self.nb_lignes - marge_bordure
+        colonne_debut: int = INDICE_MINIMUM_GRILLE + marge_bordure
+        colonne_fin: int = self.nb_colonnes - marge_bordure
+
+        for indice_ligne in range(ligne_debut, ligne_fin):
+            for indice_colonne in range(colonne_debut, colonne_fin):
+                if self.est_case_libre(indice_ligne, indice_colonne):
+                    if self.est_eloignee_des_batiments(
+                        indice_ligne,
+                        indice_colonne,
+                        marge_batiments,
+                    ):
+                        cases_eligibles.append(
+                            (indice_ligne, indice_colonne)
+                        )
+                    else:
+                        pass
+                else:
+                    pass
+
+        return cases_eligibles
+
+    def obtenir_cases_libres_pour_apparition(
+        self,
+        marge_batiments: int = DISTANCE_MIN_ENTRE_BATIMENTS,
+        marge_bordure: int = MARGE_BORDURE_APPARITION,
+    ) -> list[tuple[int, int]]:
+        """Retourne les cases libres valides pour faire apparaître un bâtiment.
+
+        Si aucune case ne respecte la marge idéale, replie sur toutes les
+        cases vides restantes de la grille.
+
+        Args:
+            marge_batiments: Distance minimale souhaitée avec les bâtiments.
+            marge_bordure: Marge souhaitée avec les bords de la grille.
+
+        Returns:
+            Liste des coordonnées (ligne, colonne) disponibles.
+        """
+        cases_ideales: list[tuple[int, int]] = (
+            self.collecter_cases_libres_avec_marges(
+                marge_batiments,
+                marge_bordure,
+            )
+        )
+        if len(cases_ideales) > LONGUEUR_LISTE_VIDE:
+            return cases_ideales
+        else:
+            cases_secours: list[tuple[int, int]] = (
+                self.collecter_cases_libres_avec_marges(
+                    DISTANCE_MIN_SECOURS_BATIMENT,
+                    MARGE_BORDURE_NULLE,
+                )
+            )
+            return cases_secours

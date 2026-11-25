@@ -6,30 +6,12 @@ from src.config import (
     FPS,
     HAUTEUR_FENETRE,
     LARGEUR_FENETRE,
-    MAISONS_TEST,
     TITRE_FENETRE,
-    USINES_TEST,
 )
 from src.controllers.game_engine import GameEngine
 from src.controllers.input_handler import InputHandler
-from src.models.entity import Maison, Usine
 from src.models.grid import Grid
 from src.views.renderer import Renderer
-
-
-def initialiser_batiments_test(grille: Grid) -> None:
-    """Place des maisons et des usines de test sur la grille.
-
-    Args:
-        grille: Instance du modèle Grid sur laquelle placer les bâtiments.
-    """
-    for ligne, colonne, couleur in MAISONS_TEST:
-        maison: Maison = Maison(ligne, colonne, couleur)
-        grille.placer_maison(maison)
-
-    for ligne, colonne, couleur in USINES_TEST:
-        usine: Usine = Usine(ligne, colonne, couleur)
-        grille.placer_usine(usine)
 
 
 def executer_jeu() -> None:
@@ -41,7 +23,6 @@ def executer_jeu() -> None:
     horloge: pygame.time.Clock = pygame.time.Clock()
 
     grille: Grid = Grid()
-    initialiser_batiments_test(grille)
     afficheur: Renderer = Renderer(ecran)
     gestionnaire_entrees: InputHandler = InputHandler()
     moteur_jeu: GameEngine = GameEngine(grille)
