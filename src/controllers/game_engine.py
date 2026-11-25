@@ -1,4 +1,4 @@
-"""Contrôleur orchestrant la simulation du trafic, des demandes et du score."""
+"""Contrôleur orchestrant la simulation, la caméra progressive et le score."""
 
 import math
 import random
@@ -7,17 +7,31 @@ from src.config import (
     COMPTEUR_INITIAL_FRAMES,
     COMPTEUR_INITIAL_LIVRAISONS,
     DELAI_APPARITION_INITIALE_PAIRE,
+    DISTANCE_MAX_INITIALE_BATIMENTS,
+    DISTANCE_MIN_ENTRE_BATIMENTS,
     DISTANCE_MIN_SECURITE_VOITURE,
+    DIVISEUR_MOITIE,
     ETAT_VOITURE_ALLER_USINE,
     ETAT_VOITURE_RETOUR_MAISON,
     FACTEUR_ACCELERATION_APPARITION,
+    INDICE_MINIMUM_GRILLE,
     INTERVALLE_INITIAL_APPARITION_BATIMENT,
     INTERVALLE_MINIMUM_APPARITION_BATIMENT,
+    LARGEUR_FENETRE,
     LONGUEUR_LISTE_VIDE,
     LONGUEUR_MINIMALE_ITINERAIRE,
+    MARGE_BORDURE_APPARITION,
+    MARGE_DECLENCHEMENT_DEZOOM,
+    MARGE_INTERIEURE_SPAWN_CAMERA,
     PALETTE_COULEURS_BATIMENTS,
+    PAS_EXPANSION_DISTANCE_SPAWN,
+    PAS_EXPANSION_ZONE_CAMERA,
     PAS_INCREMENT_COMPTEUR,
     PROBABILITE_MAISON_SEULE,
+    TAILLE_CASE,
+    VITESSE_INTERPOLATION_CAMERA,
+    ZONE_VISIBLE_INITIALE,
+    ZONE_VISIBLE_MAXIMALE,
 )
 from src.models.entity import Maison, Usine, Voiture
 from src.models.grid import Grid
@@ -25,10 +39,10 @@ from src.models.pathfinding import trouver_chemin_a_etoile
 
 
 class GameEngine:
-    """Orchestre l'apparition procédurale, les demandes, le trafic et le score."""
+    """Orchestre l'apparition progressive, la caméra, le trafic et le score."""
 
     def __init__(self, grille: Grid) -> None:
-        """Initialise le moteur de simulation avec la grille du jeu.
+        """Initialise le moteur de simulation avec la grille et la caméra.
 
         Args:
             grille: Instance du modèle Grid contenant bâtiments et routes.
@@ -42,15 +56,179 @@ class GameEngine:
         self.premiere_paire_apparue: bool = False
         self.score: int = COMPTEUR_INITIAL_LIVRAISONS
         self.partie_perdue: bool = False
+        self.nb_cases_visibles_camera: float = ZONE_VISIBLE_INITIALE
+        self.cible_cases_visibles_camera: float = ZONE_VISIBLE_INITIALE
+        self.distance_max_spawn_actuelle: int = (
+            DISTANCE_MAX_INITIALE_BATIMENTS
+        )
 
-    def choisir_case_libre_aleatoire(self) -> tuple[int, int] | None:
-        """Sélectionne aléatoirement une case libre valide sur la grille.
+    def obtenir_bornes_grille_camera(
+        self,
+    ) -> tuple[float, float, float, float]:
+        """Calcule la fenêtre de caméra centrée et le facteur de zoom actuel.
+
+        Returns:
+            Un tuple (colonne_debut, ligne_debut, taille_case_ecran,
+            facteur_zoom).
+        """
+        moitie_diviseur: float = float(DIVISEUR_MOITIE)
+        colonne_debut: float = (
+            float(self.grille.nb_colonnes) - self.nb_cases_visibles_camera
+        ) / moitie_diviseur
+        ligne_debut: float = (
+            float(self.grille.nb_lignes) - self.nb_cases_visibles_camera
+        ) / moitie_diviseur
+        taille_case_ecran: float = (
+            float(LARGEUR_FENETRE) / self.nb_cases_visibles_camera
+        )
+        facteur_zoom: float = taille_case_ecran / float(TAILLE_CASE)
+        return (colonne_debut, ligne_debut, taille_case_ecran, facteur_zoom)
+
+    def obtenir_fenetre_spawn_entiere(self) -> tuple[int, int, int, int]:
+        """Calcule les bornes entières (lignes/colonnes) de la zone de spawn.
+
+        Les bâtiments apparaissent à l'intérieur de la zone actuellement
+        couverte par la caméra, puis cette zone s'élargit au fil du jeu.
+
+        Returns:
+            Un tuple (ligne_min, ligne_max, colonne_min, colonne_max).
+        """
+        moitie_diviseur: float = float(DIVISEUR_MOITIE)
+        demi_zone: float = self.cible_cases_visibles_camera / moitie_diviseur
+        centre_ligne: float = float(self.grille.nb_lignes) / moitie_diviseur
+        centre_colonne: float = (
+            float(self.grille.nb_colonnes) / moitie_diviseur
+        )
+
+        ligne_min_brute: int = (
+            int(math.floor(centre_ligne - demi_zone))
+            + MARGE_INTERIEURE_SPAWN_CAMERA
+        )
+        ligne_max_brute: int = (
+            int(math.ceil(centre_ligne + demi_zone))
+            - MARGE_INTERIEURE_SPAWN_CAMERA
+        )
+        colonne_min_brute: int = (
+            int(math.floor(centre_colonne - demi_zone))
+            + MARGE_INTERIEURE_SPAWN_CAMERA
+        )
+        colonne_max_brute: int = (
+            int(math.ceil(centre_colonne + demi_zone))
+            - MARGE_INTERIEURE_SPAWN_CAMERA
+        )
+
+        borne_min_grille: int = (
+            INDICE_MINIMUM_GRILLE + MARGE_BORDURE_APPARITION
+        )
+        borne_max_ligne: int = (
+            self.grille.nb_lignes - MARGE_BORDURE_APPARITION
+        )
+        borne_max_colonne: int = (
+            self.grille.nb_colonnes - MARGE_BORDURE_APPARITION
+        )
+
+        if ligne_min_brute < borne_min_grille:
+            ligne_min: int = borne_min_grille
+        else:
+            ligne_min = ligne_min_brute
+
+        if ligne_max_brute > borne_max_ligne:
+            ligne_max: int = borne_max_ligne
+        else:
+            ligne_max = ligne_max_brute
+
+        if colonne_min_brute < borne_min_grille:
+            colonne_min: int = borne_min_grille
+        else:
+            colonne_min = colonne_min_brute
+
+        if colonne_max_brute > borne_max_colonne:
+            colonne_max: int = borne_max_colonne
+        else:
+            colonne_max = colonne_max_brute
+
+        return (ligne_min, ligne_max, colonne_min, colonne_max)
+
+    def ajuster_cible_camera_apres_apparition(
+        self,
+        ligne: int,
+        colonne: int,
+    ) -> None:
+        """Élargit progressivement le champ de la caméra et le rayon de spawn.
+
+        Args:
+            ligne: Ligne du bâtiment qui vient d'apparaître.
+            colonne: Colonne du bâtiment qui vient d'apparaître.
+        """
+        moitie_diviseur: float = float(DIVISEUR_MOITIE)
+        centre_ligne: float = float(self.grille.nb_lignes) / moitie_diviseur
+        centre_colonne: float = (
+            float(self.grille.nb_colonnes) / moitie_diviseur
+        )
+
+        ecart_centre_ligne: float = abs(float(ligne) - centre_ligne)
+        ecart_centre_colonne: float = abs(float(colonne) - centre_colonne)
+        if ecart_centre_ligne > ecart_centre_colonne:
+            ecart_max: float = ecart_centre_ligne
+        else:
+            ecart_max = ecart_centre_colonne
+
+        zone_requise_par_position: float = (
+            (ecart_max + MARGE_DECLENCHEMENT_DEZOOM) * moitie_diviseur
+        )
+        nouvelle_cible: float = (
+            self.cible_cases_visibles_camera + PAS_EXPANSION_ZONE_CAMERA
+        )
+
+        if zone_requise_par_position > nouvelle_cible:
+            nouvelle_cible = zone_requise_par_position
+        else:
+            pass
+
+        if nouvelle_cible > ZONE_VISIBLE_MAXIMALE:
+            self.cible_cases_visibles_camera = ZONE_VISIBLE_MAXIMALE
+        else:
+            self.cible_cases_visibles_camera = nouvelle_cible
+
+        self.distance_max_spawn_actuelle = (
+            self.distance_max_spawn_actuelle + PAS_EXPANSION_DISTANCE_SPAWN
+        )
+
+    def mettre_a_jour_interpolation_camera(self) -> None:
+        """Dézoome en douceur la caméra vers sa taille cible à chaque frame."""
+        ecart_camera: float = (
+            self.cible_cases_visibles_camera - self.nb_cases_visibles_camera
+        )
+        self.nb_cases_visibles_camera = (
+            self.nb_cases_visibles_camera
+            + ecart_camera * VITESSE_INTERPOLATION_CAMERA
+        )
+
+    def choisir_case_libre_aleatoire(
+        self,
+        couleur_cible: tuple[int, int, int] | None = None,
+    ) -> tuple[int, int] | None:
+        """Sélectionne une case libre dans la zone de caméra et proche du réseau.
+
+        Args:
+            couleur_cible: Couleur optionnelle du réseau auquel se rattacher.
 
         Returns:
             Un tuple (ligne, colonne) libre, ou None si la grille est pleine.
         """
+        ligne_min, ligne_max, colonne_min, colonne_max = (
+            self.obtenir_fenetre_spawn_entiere()
+        )
         cases_disponibles: list[tuple[int, int]] = (
-            self.grille.obtenir_cases_libres_pour_apparition()
+            self.grille.obtenir_cases_libres_dans_zone(
+                ligne_min,
+                ligne_max,
+                colonne_min,
+                colonne_max,
+                DISTANCE_MIN_ENTRE_BATIMENTS,
+                self.distance_max_spawn_actuelle,
+                couleur_cible,
+            )
         )
         if len(cases_disponibles) > LONGUEUR_LISTE_VIDE:
             case_choisie: tuple[int, int] = random.choice(cases_disponibles)
@@ -87,7 +265,7 @@ class GameEngine:
         self,
         couleur: tuple[int, int, int],
     ) -> bool:
-        """Fait apparaître une maison seule sur une case libre aléatoire.
+        """Fait apparaître une maison seule dans la zone active.
 
         Args:
             couleur: Couleur RGB de la maison (rattachée à une usine active).
@@ -96,7 +274,7 @@ class GameEngine:
             True si la maison a pu être placée, False sinon.
         """
         case_maison: tuple[int, int] | None = (
-            self.choisir_case_libre_aleatoire()
+            self.choisir_case_libre_aleatoire(couleur)
         )
         if case_maison is not None:
             ligne_maison, colonne_maison = case_maison
@@ -105,7 +283,15 @@ class GameEngine:
                 colonne_maison,
                 couleur,
             )
-            return self.grille.placer_maison(nouvelle_maison)
+            est_placee: bool = self.grille.placer_maison(nouvelle_maison)
+            if est_placee and self.premiere_paire_apparue:
+                self.ajuster_cible_camera_apres_apparition(
+                    ligne_maison,
+                    colonne_maison,
+                )
+            else:
+                pass
+            return est_placee
         else:
             return False
 
@@ -135,6 +321,14 @@ class GameEngine:
 
         if not usine_placee:
             return False
+        else:
+            pass
+
+        if self.premiere_paire_apparue:
+            self.ajuster_cible_camera_apres_apparition(
+                ligne_usine,
+                colonne_usine,
+            )
         else:
             pass
 
@@ -501,6 +695,7 @@ class GameEngine:
         else:
             pass
 
+        self.mettre_a_jour_interpolation_camera()
         self.gerer_apparition_procedurale_batiments()
         self.mettre_a_jour_demandes_usines()
         if self.partie_perdue:

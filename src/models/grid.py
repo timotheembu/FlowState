@@ -433,3 +433,138 @@ class Grid:
                 )
             )
             return cases_secours
+
+    def est_a_proximite_batiment_reference(
+        self,
+        ligne: int,
+        colonne: int,
+        distance_maximale: int,
+        couleur_cible: tuple[int, int, int] | None = None,
+    ) -> bool:
+        """Vérifie si une case est à distance raisonnable d'un bâtiment actif.
+
+        Args:
+            ligne: Indice de la ligne candidate.
+            colonne: Indice de la colonne candidate.
+            distance_maximale: Écart maximal autorisé en lignes ou colonnes.
+            couleur_cible: Couleur privilégiée des bâtiments de référence.
+
+        Returns:
+            True s'il n'y a aucun bâtiment sur la carte ou si au moins un
+            bâtiment de référence se trouve dans le rayon distance_maximale.
+        """
+        aucun_batiment: bool = (
+            len(self.maisons) == LONGUEUR_LISTE_VIDE
+            and len(self.usines) == LONGUEUR_LISTE_VIDE
+        )
+        if aucun_batiment:
+            return True
+        else:
+            pass
+
+        coordonnees_reference: list[tuple[int, int]] = []
+
+        if couleur_cible is not None:
+            for usine in self.usines:
+                if usine.couleur == couleur_cible:
+                    coordonnees_reference.append(
+                        (usine.ligne, usine.colonne)
+                    )
+                else:
+                    pass
+            for maison in self.maisons:
+                if maison.couleur == couleur_cible:
+                    coordonnees_reference.append(
+                        (maison.ligne, maison.colonne)
+                    )
+                else:
+                    pass
+        else:
+            pass
+
+        if len(coordonnees_reference) == LONGUEUR_LISTE_VIDE:
+            for usine in self.usines:
+                coordonnees_reference.append((usine.ligne, usine.colonne))
+            for maison in self.maisons:
+                coordonnees_reference.append((maison.ligne, maison.colonne))
+        else:
+            pass
+
+        for ref_ligne, ref_colonne in coordonnees_reference:
+            ecart_ligne: int = abs(ligne - ref_ligne)
+            ecart_colonne: int = abs(colonne - ref_colonne)
+            dans_rayon: bool = (
+                ecart_ligne <= distance_maximale
+                and ecart_colonne <= distance_maximale
+            )
+            if dans_rayon:
+                return True
+            else:
+                pass
+
+        return False
+
+    def obtenir_cases_libres_dans_zone(
+        self,
+        ligne_min: int,
+        ligne_max: int,
+        colonne_min: int,
+        colonne_max: int,
+        distance_minimale: int,
+        distance_maximale: int,
+        couleur_cible: tuple[int, int, int] | None = None,
+    ) -> list[tuple[int, int]]:
+        """Retourne les cases vides dans une fenêtre donnée proches du réseau.
+
+        Args:
+            ligne_min: Borne inférieure de ligne (incluse).
+            ligne_max: Borne supérieure de ligne (exclue).
+            colonne_min: Borne inférieure de colonne (incluse).
+            colonne_max: Borne supérieure de colonne (exclue).
+            distance_minimale: Écart minimum avec tout bâtiment existant.
+            distance_maximale: Écart maximum avec un bâtiment de référence.
+            couleur_cible: Couleur optionnelle pour cibler un réseau existant.
+
+        Returns:
+            Liste des coordonnées (ligne, colonne) éligibles.
+        """
+        cases_proches_dans_zone: list[tuple[int, int]] = []
+        cases_dans_zone: list[tuple[int, int]] = []
+
+        for indice_ligne in range(ligne_min, ligne_max):
+            for indice_colonne in range(colonne_min, colonne_max):
+                if self.est_case_libre(indice_ligne, indice_colonne):
+                    if self.est_eloignee_des_batiments(
+                        indice_ligne,
+                        indice_colonne,
+                        distance_minimale,
+                    ):
+                        cases_dans_zone.append(
+                            (indice_ligne, indice_colonne)
+                        )
+                        if self.est_a_proximite_batiment_reference(
+                            indice_ligne,
+                            indice_colonne,
+                            distance_maximale,
+                            couleur_cible,
+                        ):
+                            cases_proches_dans_zone.append(
+                                (indice_ligne, indice_colonne)
+                            )
+                        else:
+                            pass
+                    else:
+                        pass
+                else:
+                    pass
+
+        if len(cases_proches_dans_zone) > LONGUEUR_LISTE_VIDE:
+            return cases_proches_dans_zone
+        else:
+            if len(cases_dans_zone) > LONGUEUR_LISTE_VIDE:
+                return cases_dans_zone
+            else:
+                return self.obtenir_cases_libres_pour_apparition(
+                    distance_minimale,
+                    MARGE_BORDURE_APPARITION,
+                )

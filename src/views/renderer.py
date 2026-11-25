@@ -1,9 +1,10 @@
-"""Vue chargée du rendu graphique Pygame de la grille, des entités et de l'ATH."""
+"""Vue chargée du rendu graphique Pygame avec caméra à zoom progressif."""
 
 import pygame
 
 from src.config import (
     COMPTEUR_INITIAL_LIVRAISONS,
+    COORDONNEE_CAMERA_ORIGINE_FLOAT,
     COORDONNEE_ORIGINE,
     COULEUR_CONTOUR_BATIMENT,
     COULEUR_FOND,
@@ -21,6 +22,7 @@ from src.config import (
     DECALAGE_VOIE_DROITE_PIXELS,
     DECALAGE_VOISIN_NEGATIF,
     DECALAGE_VOISIN_POSITIF,
+    DIMENSION_PIXEL_MINIMALE,
     DIRECTIONS_DIAGONALES,
     DIVISEUR_MOITIE,
     EPAISSEUR_CONTOUR_INTERFACE,
@@ -29,6 +31,7 @@ from src.config import (
     EPAISSEUR_SEGMENT_DIAGONAL,
     ESPACEMENT_INDICATEUR_DEMANDE,
     FACTEUR_DOUBLE_MARGE,
+    FACTEUR_ECHELLE_UNITE,
     HAUTEUR_BANDEAU_ROUTES,
     HAUTEUR_BANDEAU_SCORE,
     HAUTEUR_FENETRE,
@@ -90,21 +93,84 @@ class Renderer:
             )
         )
 
+    def mettre_a_echelle(
+        self,
+        valeur_base: int,
+        facteur_zoom: float,
+    ) -> int:
+        """Met à l'échelle une dimension en pixels selon le facteur de zoom.
+
+        Args:
+            valeur_base: Dimension de référence à zoom 1.0.
+            facteur_zoom: Multiplicateur de zoom actuel.
+
+        Returns:
+            Entier mis à l'échelle (au moins DIMENSION_PIXEL_MINIMALE).
+        """
+        valeur_zoomee: int = int(round(float(valeur_base) * facteur_zoom))
+        if valeur_zoomee < DIMENSION_PIXEL_MINIMALE:
+            return DIMENSION_PIXEL_MINIMALE
+        else:
+            return valeur_zoomee
+
+    def convertir_monde_en_ecran(
+        self,
+        colonne_monde: float,
+        ligne_monde: float,
+        colonne_debut_camera: float,
+        ligne_debut_camera: float,
+        taille_case_camera: float,
+    ) -> tuple[int, int]:
+        """Projette une coordonnée flottante de grille en pixels écran.
+
+        Args:
+            colonne_monde: Coordonnée colonne dans le monde.
+            ligne_monde: Coordonnée ligne dans le monde.
+            colonne_debut_camera: Colonne du bord gauche de la caméra.
+            ligne_debut_camera: Ligne du bord supérieur de la caméra.
+            taille_case_camera: Taille d'une case en pixels écran.
+
+        Returns:
+            Un tuple (position_x, position_y) en pixels sur l'écran.
+        """
+        position_x: int = int(
+            round((colonne_monde - colonne_debut_camera) * taille_case_camera)
+        )
+        position_y: int = int(
+            round((ligne_monde - ligne_debut_camera) * taille_case_camera)
+        )
+        return (position_x, position_y)
+
     def dessiner_fond(self) -> None:
         """Remplit l'écran avec la couleur de fond."""
         self.ecran.fill(COULEUR_FOND)
 
-    def dessiner_grille(self, grille: Grid) -> None:
-        """Trace les lignes horizontales et verticales de la grille.
+    def dessiner_grille(
+        self,
+        grille: Grid,
+        colonne_debut_camera: float,
+        ligne_debut_camera: float,
+        taille_case_camera: float,
+    ) -> None:
+        """Trace les lignes horizontales et verticales de la grille zoomée.
 
         Args:
             grille: Instance du modèle Grid à représenter.
+            colonne_debut_camera: Colonne du bord gauche de la caméra.
+            ligne_debut_camera: Ligne du bord supérieur de la caméra.
+            taille_case_camera: Taille d'une case en pixels écran.
         """
         nb_traits_horizontaux: int = (
             grille.nb_lignes + INCREMENT_BORNE_GRILLE
         )
         for indice_ligne in range(nb_traits_horizontaux):
-            position_y: int = indice_ligne * TAILLE_CASE
+            _, position_y = self.convertir_monde_en_ecran(
+                COORDONNEE_CAMERA_ORIGINE_FLOAT,
+                float(indice_ligne),
+                colonne_debut_camera,
+                ligne_debut_camera,
+                taille_case_camera,
+            )
             point_depart_horizontal: tuple[int, int] = (
                 COORDONNEE_ORIGINE,
                 position_y,
@@ -125,7 +191,13 @@ class Renderer:
             grille.nb_colonnes + INCREMENT_BORNE_GRILLE
         )
         for indice_colonne in range(nb_traits_verticaux):
-            position_x: int = indice_colonne * TAILLE_CASE
+            position_x, _ = self.convertir_monde_en_ecran(
+                float(indice_colonne),
+                COORDONNEE_CAMERA_ORIGINE_FLOAT,
+                colonne_debut_camera,
+                ligne_debut_camera,
+                taille_case_camera,
+            )
             point_depart_vertical: tuple[int, int] = (
                 position_x,
                 COORDONNEE_ORIGINE,
@@ -142,21 +214,47 @@ class Renderer:
                 EPAISSEUR_LIGNE_GRILLE,
             )
 
-    def dessiner_maisons(self, maisons: list[Maison]) -> None:
-        """Dessine chaque maison sous forme de petit carré plein arrondi.
+    def dessiner_maisons(
+        self,
+        maisons: list[Maison],
+        colonne_debut_camera: float,
+        ligne_debut_camera: float,
+        taille_case_camera: float,
+        facteur_zoom: float,
+    ) -> None:
+        """Dessine chaque maison mise à l'échelle de la caméra.
 
         Args:
             maisons: Liste des instances de Maison à dessiner.
+            colonne_debut_camera: Colonne du bord gauche de la caméra.
+            ligne_debut_camera: Ligne du bord supérieur de la caméra.
+            taille_case_camera: Taille d'une case en pixels écran.
+            facteur_zoom: Facteur d'échelle actuel.
         """
-        taille_maison: int = (
-            TAILLE_CASE - FACTEUR_DOUBLE_MARGE * MARGE_MAISON
+        marge_maison_zoom: int = self.mettre_a_echelle(
+            MARGE_MAISON,
+            facteur_zoom,
         )
+        taille_case_int: int = int(round(taille_case_camera))
+        taille_maison: int = (
+            taille_case_int - FACTEUR_DOUBLE_MARGE * marge_maison_zoom
+        )
+        rayon_bordure: int = self.mettre_a_echelle(
+            RAYON_BORDURE_MAISON,
+            facteur_zoom,
+        )
+
         for maison in maisons:
-            position_x: int = maison.colonne * TAILLE_CASE + MARGE_MAISON
-            position_y: int = maison.ligne * TAILLE_CASE + MARGE_MAISON
+            case_x, case_y = self.convertir_monde_en_ecran(
+                float(maison.colonne),
+                float(maison.ligne),
+                colonne_debut_camera,
+                ligne_debut_camera,
+                taille_case_camera,
+            )
             rectangle_maison: pygame.Rect = pygame.Rect(
-                position_x,
-                position_y,
+                case_x + marge_maison_zoom,
+                case_y + marge_maison_zoom,
                 taille_maison,
                 taille_maison,
             )
@@ -164,23 +262,46 @@ class Renderer:
                 self.ecran,
                 maison.couleur,
                 rectangle_maison,
-                border_radius=RAYON_BORDURE_MAISON,
+                border_radius=rayon_bordure,
             )
 
-    def dessiner_demandes_usine(self, usine: Usine) -> None:
+    def dessiner_demandes_usine(
+        self,
+        usine: Usine,
+        case_x: int,
+        case_y: int,
+        facteur_zoom: float,
+    ) -> None:
         """Dessine les indicateurs de demandes en attente sur une usine.
 
         Args:
             usine: Instance de Usine dont il faut afficher les demandes.
+            case_x: Coordonnée X en pixels écran du coin de la case.
+            case_y: Coordonnée Y en pixels écran du coin de la case.
+            facteur_zoom: Facteur d'échelle actuel.
         """
-        case_x: int = usine.colonne * TAILLE_CASE
-        case_y: int = usine.ligne * TAILLE_CASE
-
         nb_indicateurs: int = usine.demandes_actives
         if nb_indicateurs > SEUIL_CRITIQUE_DEMANDES_USINE:
             nb_indicateurs = SEUIL_CRITIQUE_DEMANDES_USINE
         else:
             pass
+
+        marge_interieure_zoom: int = self.mettre_a_echelle(
+            MARGE_INTERIEURE_DEMANDE,
+            facteur_zoom,
+        )
+        espacement_zoom: int = self.mettre_a_echelle(
+            ESPACEMENT_INDICATEUR_DEMANDE,
+            facteur_zoom,
+        )
+        rayon_point_zoom: int = self.mettre_a_echelle(
+            RAYON_INDICATEUR_DEMANDE,
+            facteur_zoom,
+        )
+        epaisseur_contour_zoom: int = self.mettre_a_echelle(
+            RAYON_CONTOUR_DEMANDE,
+            facteur_zoom,
+        )
 
         for indice_demande in range(nb_indicateurs):
             colonne_point: int = (
@@ -191,44 +312,74 @@ class Renderer:
             )
             centre_point_x: int = (
                 case_x
-                + MARGE_INTERIEURE_DEMANDE
-                + colonne_point * ESPACEMENT_INDICATEUR_DEMANDE
+                + marge_interieure_zoom
+                + colonne_point * espacement_zoom
             )
             centre_point_y: int = (
                 case_y
-                + MARGE_INTERIEURE_DEMANDE
-                + ligne_point * ESPACEMENT_INDICATEUR_DEMANDE
+                + marge_interieure_zoom
+                + ligne_point * espacement_zoom
             )
             centre_point: tuple[int, int] = (centre_point_x, centre_point_y)
             pygame.draw.circle(
                 self.ecran,
                 COULEUR_INDICATEUR_DEMANDE,
                 centre_point,
-                RAYON_INDICATEUR_DEMANDE,
+                rayon_point_zoom,
             )
             pygame.draw.circle(
                 self.ecran,
                 COULEUR_CONTOUR_BATIMENT,
                 centre_point,
-                RAYON_INDICATEUR_DEMANDE,
-                width=RAYON_CONTOUR_DEMANDE,
+                rayon_point_zoom,
+                width=epaisseur_contour_zoom,
             )
 
-    def dessiner_usines(self, usines: list[Usine]) -> None:
-        """Dessine chaque usine et ses indicateurs de demandes en attente.
+    def dessiner_usines(
+        self,
+        usines: list[Usine],
+        colonne_debut_camera: float,
+        ligne_debut_camera: float,
+        taille_case_camera: float,
+        facteur_zoom: float,
+    ) -> None:
+        """Dessine chaque usine et ses indicateurs de demandes avec zoom.
 
         Args:
             usines: Liste des instances de Usine à dessiner.
+            colonne_debut_camera: Colonne du bord gauche de la caméra.
+            ligne_debut_camera: Ligne du bord supérieur de la caméra.
+            taille_case_camera: Taille d'une case en pixels écran.
+            facteur_zoom: Facteur d'échelle actuel.
         """
-        taille_usine: int = (
-            TAILLE_CASE - FACTEUR_DOUBLE_MARGE * MARGE_USINE
+        marge_usine_zoom: int = self.mettre_a_echelle(
+            MARGE_USINE,
+            facteur_zoom,
         )
+        taille_case_int: int = int(round(taille_case_camera))
+        taille_usine: int = (
+            taille_case_int - FACTEUR_DOUBLE_MARGE * marge_usine_zoom
+        )
+        rayon_bordure: int = self.mettre_a_echelle(
+            RAYON_BORDURE_USINE,
+            facteur_zoom,
+        )
+        epaisseur_contour: int = self.mettre_a_echelle(
+            EPAISSEUR_CONTOUR_USINE,
+            facteur_zoom,
+        )
+
         for usine in usines:
-            position_x: int = usine.colonne * TAILLE_CASE + MARGE_USINE
-            position_y: int = usine.ligne * TAILLE_CASE + MARGE_USINE
+            case_x, case_y = self.convertir_monde_en_ecran(
+                float(usine.colonne),
+                float(usine.ligne),
+                colonne_debut_camera,
+                ligne_debut_camera,
+                taille_case_camera,
+            )
             rectangle_usine: pygame.Rect = pygame.Rect(
-                position_x,
-                position_y,
+                case_x + marge_usine_zoom,
+                case_y + marge_usine_zoom,
                 taille_usine,
                 taille_usine,
             )
@@ -236,22 +387,31 @@ class Renderer:
                 self.ecran,
                 usine.couleur,
                 rectangle_usine,
-                border_radius=RAYON_BORDURE_USINE,
+                border_radius=rayon_bordure,
             )
             pygame.draw.rect(
                 self.ecran,
                 COULEUR_CONTOUR_BATIMENT,
                 rectangle_usine,
-                width=EPAISSEUR_CONTOUR_USINE,
-                border_radius=RAYON_BORDURE_USINE,
+                width=epaisseur_contour,
+                border_radius=rayon_bordure,
             )
-            self.dessiner_demandes_usine(usine)
+            self.dessiner_demandes_usine(
+                usine,
+                case_x,
+                case_y,
+                facteur_zoom,
+            )
 
     def dessiner_connexions_case_route(
         self,
         grille: Grid,
         ligne: int,
         colonne: int,
+        colonne_debut_camera: float,
+        ligne_debut_camera: float,
+        taille_case_camera: float,
+        facteur_zoom: float,
     ) -> None:
         """Dessine les extensions reliant une route à ses voisins connectables.
 
@@ -259,19 +419,39 @@ class Renderer:
             grille: Instance du modèle Grid contenant l'état des cases.
             ligne: Indice de la ligne de la case de route.
             colonne: Indice de la colonne de la case de route.
+            colonne_debut_camera: Colonne du bord gauche de la caméra.
+            ligne_debut_camera: Ligne du bord supérieur de la caméra.
+            taille_case_camera: Taille d'une case en pixels écran.
+            facteur_zoom: Facteur d'échelle actuel.
         """
-        taille_route: int = (
-            TAILLE_CASE - FACTEUR_DOUBLE_MARGE * MARGE_ROUTE
+        marge_route_zoom: int = self.mettre_a_echelle(
+            MARGE_ROUTE,
+            facteur_zoom,
         )
-        case_x: int = colonne * TAILLE_CASE
-        case_y: int = ligne * TAILLE_CASE
-        centre_x: int = case_x + MARGE_ROUTE
-        centre_y: int = case_y + MARGE_ROUTE
+        marge_maison_zoom: int = self.mettre_a_echelle(
+            MARGE_MAISON,
+            facteur_zoom,
+        )
+        taille_case_int: int = int(round(taille_case_camera))
+        taille_route: int = (
+            taille_case_int - FACTEUR_DOUBLE_MARGE * marge_route_zoom
+        )
+        case_x, case_y = self.convertir_monde_en_ecran(
+            float(colonne),
+            float(ligne),
+            colonne_debut_camera,
+            ligne_debut_camera,
+            taille_case_camera,
+        )
+        centre_x: int = case_x + marge_route_zoom
+        centre_y: int = case_y + marge_route_zoom
 
         ligne_haut: int = ligne + DECALAGE_VOISIN_NEGATIF
         if grille.est_case_connectable_route(ligne_haut, colonne):
-            hauteur_extension_haut: int = MARGE_ROUTE + MARGE_MAISON
-            debut_y_haut: int = case_y - MARGE_MAISON
+            hauteur_extension_haut: int = (
+                marge_route_zoom + marge_maison_zoom
+            )
+            debut_y_haut: int = case_y - marge_maison_zoom
             segment_haut: pygame.Rect = pygame.Rect(
                 centre_x,
                 debut_y_haut,
@@ -285,7 +465,9 @@ class Renderer:
         ligne_bas: int = ligne + DECALAGE_VOISIN_POSITIF
         if grille.est_case_connectable_route(ligne_bas, colonne):
             debut_y_bas: int = centre_y + taille_route
-            hauteur_extension_bas: int = MARGE_ROUTE + MARGE_MAISON
+            hauteur_extension_bas: int = (
+                marge_route_zoom + marge_maison_zoom
+            )
             segment_bas: pygame.Rect = pygame.Rect(
                 centre_x,
                 debut_y_bas,
@@ -298,8 +480,10 @@ class Renderer:
 
         colonne_gauche: int = colonne + DECALAGE_VOISIN_NEGATIF
         if grille.est_case_connectable_route(ligne, colonne_gauche):
-            largeur_extension_gauche: int = MARGE_ROUTE + MARGE_MAISON
-            debut_x_gauche: int = case_x - MARGE_MAISON
+            largeur_extension_gauche: int = (
+                marge_route_zoom + marge_maison_zoom
+            )
+            debut_x_gauche: int = case_x - marge_maison_zoom
             segment_gauche: pygame.Rect = pygame.Rect(
                 debut_x_gauche,
                 centre_y,
@@ -313,7 +497,9 @@ class Renderer:
         colonne_droite: int = colonne + DECALAGE_VOISIN_POSITIF
         if grille.est_case_connectable_route(ligne, colonne_droite):
             debut_x_droite: int = centre_x + taille_route
-            largeur_extension_droite: int = MARGE_ROUTE + MARGE_MAISON
+            largeur_extension_droite: int = (
+                marge_route_zoom + marge_maison_zoom
+            )
             segment_droite: pygame.Rect = pygame.Rect(
                 debut_x_droite,
                 centre_y,
@@ -324,13 +510,17 @@ class Renderer:
         else:
             pass
 
-        centre_case_x: int = int(
-            (float(colonne) + DECALAGE_CENTRE_CASE) * TAILLE_CASE
+        point_centre_case: tuple[int, int] = self.convertir_monde_en_ecran(
+            float(colonne) + DECALAGE_CENTRE_CASE,
+            float(ligne) + DECALAGE_CENTRE_CASE,
+            colonne_debut_camera,
+            ligne_debut_camera,
+            taille_case_camera,
         )
-        centre_case_y: int = int(
-            (float(ligne) + DECALAGE_CENTRE_CASE) * TAILLE_CASE
+        epaisseur_diagonale_zoom: int = self.mettre_a_echelle(
+            EPAISSEUR_SEGMENT_DIAGONAL,
+            facteur_zoom,
         )
-        point_centre_case: tuple[int, int] = (centre_case_x, centre_case_y)
 
         for delta_colonne, delta_ligne in DIRECTIONS_DIAGONALES:
             voisin_ligne: int = ligne + delta_ligne
@@ -339,49 +529,68 @@ class Renderer:
                 voisin_ligne,
                 voisin_colonne,
             ):
-                centre_voisin_x: int = int(
-                    (float(voisin_colonne) + DECALAGE_CENTRE_CASE)
-                    * TAILLE_CASE
-                )
-                centre_voisin_y: int = int(
-                    (float(voisin_ligne) + DECALAGE_CENTRE_CASE)
-                    * TAILLE_CASE
-                )
                 point_centre_voisin: tuple[int, int] = (
-                    centre_voisin_x,
-                    centre_voisin_y,
+                    self.convertir_monde_en_ecran(
+                        float(voisin_colonne) + DECALAGE_CENTRE_CASE,
+                        float(voisin_ligne) + DECALAGE_CENTRE_CASE,
+                        colonne_debut_camera,
+                        ligne_debut_camera,
+                        taille_case_camera,
+                    )
                 )
                 pygame.draw.line(
                     self.ecran,
                     COULEUR_ROUTE,
                     point_centre_case,
                     point_centre_voisin,
-                    EPAISSEUR_SEGMENT_DIAGONAL,
+                    epaisseur_diagonale_zoom,
                 )
             else:
                 pass
 
-    def dessiner_routes(self, grille: Grid) -> None:
-        """Dessine tous les segments de route présents sur la grille.
+    def dessiner_routes(
+        self,
+        grille: Grid,
+        colonne_debut_camera: float,
+        ligne_debut_camera: float,
+        taille_case_camera: float,
+        facteur_zoom: float,
+    ) -> None:
+        """Dessine tous les segments de route avec la transformation caméra.
 
         Args:
             grille: Instance du modèle Grid à parcourir.
+            colonne_debut_camera: Colonne du bord gauche de la caméra.
+            ligne_debut_camera: Ligne du bord supérieur de la caméra.
+            taille_case_camera: Taille d'une case en pixels écran.
+            facteur_zoom: Facteur d'échelle actuel.
         """
-        taille_route: int = (
-            TAILLE_CASE - FACTEUR_DOUBLE_MARGE * MARGE_ROUTE
+        marge_route_zoom: int = self.mettre_a_echelle(
+            MARGE_ROUTE,
+            facteur_zoom,
         )
+        taille_case_int: int = int(round(taille_case_camera))
+        taille_route: int = (
+            taille_case_int - FACTEUR_DOUBLE_MARGE * marge_route_zoom
+        )
+        rayon_noeud_zoom: int = self.mettre_a_echelle(
+            RAYON_NOEUD_ROUTE,
+            facteur_zoom,
+        )
+
         for indice_ligne in range(grille.nb_lignes):
             for indice_colonne in range(grille.nb_colonnes):
                 if grille.est_case_route(indice_ligne, indice_colonne):
-                    position_x: int = (
-                        indice_colonne * TAILLE_CASE + MARGE_ROUTE
-                    )
-                    position_y: int = (
-                        indice_ligne * TAILLE_CASE + MARGE_ROUTE
+                    case_x, case_y = self.convertir_monde_en_ecran(
+                        float(indice_colonne),
+                        float(indice_ligne),
+                        colonne_debut_camera,
+                        ligne_debut_camera,
+                        taille_case_camera,
                     )
                     noeud_route: pygame.Rect = pygame.Rect(
-                        position_x,
-                        position_y,
+                        case_x + marge_route_zoom,
+                        case_y + marge_route_zoom,
                         taille_route,
                         taille_route,
                     )
@@ -389,56 +598,86 @@ class Renderer:
                         self.ecran,
                         COULEUR_ROUTE,
                         noeud_route,
-                        border_radius=RAYON_NOEUD_ROUTE,
+                        border_radius=rayon_noeud_zoom,
                     )
                     self.dessiner_connexions_case_route(
                         grille,
                         indice_ligne,
                         indice_colonne,
+                        colonne_debut_camera,
+                        ligne_debut_camera,
+                        taille_case_camera,
+                        facteur_zoom,
                     )
                 else:
                     pass
 
-    def dessiner_voitures(self, voitures: list[Voiture]) -> None:
-        """Dessine chaque voiture décalée sur sa voie de droite.
+    def dessiner_voitures(
+        self,
+        voitures: list[Voiture],
+        colonne_debut_camera: float,
+        ligne_debut_camera: float,
+        taille_case_camera: float,
+        facteur_zoom: float,
+    ) -> None:
+        """Dessine chaque voiture décalée sur sa voie de droite avec zoom.
 
         Args:
             voitures: Liste des instances de Voiture en circulation.
+            colonne_debut_camera: Colonne du bord gauche de la caméra.
+            ligne_debut_camera: Ligne du bord supérieur de la caméra.
+            taille_case_camera: Taille d'une case en pixels écran.
+            facteur_zoom: Facteur d'échelle actuel.
         """
+        rayon_voiture_zoom: int = self.mettre_a_echelle(
+            RAYON_VOITURE,
+            facteur_zoom,
+        )
+        epaisseur_contour_zoom: int = self.mettre_a_echelle(
+            RAYON_CONTOUR_VOITURE,
+            facteur_zoom,
+        )
+        decalage_voie_zoom: float = (
+            float(DECALAGE_VOIE_DROITE_PIXELS) * facteur_zoom
+        )
+
         for voiture in voitures:
             if voiture.est_en_circulation():
                 decalage_droite_x, decalage_droite_y = (
                     voiture.obtenir_vecteur_decalage_droite()
                 )
+                base_x, base_y = self.convertir_monde_en_ecran(
+                    voiture.position_colonne + DECALAGE_CENTRE_CASE,
+                    voiture.position_ligne + DECALAGE_CENTRE_CASE,
+                    colonne_debut_camera,
+                    ligne_debut_camera,
+                    taille_case_camera,
+                )
                 centre_x: int = int(
-                    (voiture.position_colonne + DECALAGE_CENTRE_CASE)
-                    * TAILLE_CASE
-                    + decalage_droite_x * DECALAGE_VOIE_DROITE_PIXELS
+                    round(float(base_x) + decalage_droite_x * decalage_voie_zoom)
                 )
                 centre_y: int = int(
-                    (voiture.position_ligne + DECALAGE_CENTRE_CASE)
-                    * TAILLE_CASE
-                    + decalage_droite_y * DECALAGE_VOIE_DROITE_PIXELS
+                    round(float(base_y) + decalage_droite_y * decalage_voie_zoom)
                 )
                 centre_voiture: tuple[int, int] = (centre_x, centre_y)
                 pygame.draw.circle(
                     self.ecran,
                     voiture.couleur,
                     centre_voiture,
-                    RAYON_VOITURE,
+                    rayon_voiture_zoom,
                 )
                 pygame.draw.circle(
                     self.ecran,
                     COULEUR_CONTOUR_BATIMENT,
                     centre_voiture,
-                    RAYON_VOITURE,
-                    width=RAYON_CONTOUR_VOITURE,
+                    rayon_voiture_zoom,
+                    width=epaisseur_contour_zoom,
                 )
             else:
                 pass
 
     def dessiner_bandeau_score(self, score: int) -> None:
-        """Affiche le compteur de score en haut à gauche de la fenêtre.
+        """Affiche le compteur de score fixe en haut à gauche de la fenêtre.
 
         Args:
             score: Nombre total de livraisons effectuées.
@@ -473,7 +712,7 @@ class Renderer:
         self.ecran.blit(surface_texte, rectangle_texte)
 
     def dessiner_bandeau_routes(self, stock_routes: int) -> None:
-        """Affiche le stock de cases de route disponibles en haut de l'écran.
+        """Affiche le stock de cases de route fixe en haut de l'écran.
 
         Args:
             stock_routes: Nombre de cases de route restantes dans l'inventaire.
@@ -575,22 +814,67 @@ class Renderer:
         voitures: list[Voiture] | None = None,
         score: int = COMPTEUR_INITIAL_LIVRAISONS,
         partie_perdue: bool = False,
+        parametres_camera: tuple[float, float, float, float] | None = None,
     ) -> None:
-        """Effectue le rendu complet d'une frame et met à jour l'écran.
+        """Effectue le rendu complet d'une frame avec caméra et HUD fixe.
 
         Args:
             grille: Instance du modèle Grid à afficher.
             voitures: Liste optionnelle des voitures actives à dessiner.
             score: Score actuel du joueur.
             partie_perdue: Indique si l'écran de défaite doit être affiché.
+            parametres_camera: Tuple optionnel (colonne_debut, ligne_debut,
+                taille_case_camera, facteur_zoom).
         """
+        if parametres_camera is not None:
+            (
+                colonne_debut_cam,
+                ligne_debut_cam,
+                taille_case_cam,
+                facteur_zoom,
+            ) = parametres_camera
+        else:
+            colonne_debut_cam = COORDONNEE_CAMERA_ORIGINE_FLOAT
+            ligne_debut_cam = COORDONNEE_CAMERA_ORIGINE_FLOAT
+            taille_case_cam = float(TAILLE_CASE)
+            facteur_zoom = FACTEUR_ECHELLE_UNITE
+
         self.dessiner_fond()
-        self.dessiner_grille(grille)
-        self.dessiner_routes(grille)
-        self.dessiner_maisons(grille.maisons)
-        self.dessiner_usines(grille.usines)
+        self.dessiner_grille(
+            grille,
+            colonne_debut_cam,
+            ligne_debut_cam,
+            taille_case_cam,
+        )
+        self.dessiner_routes(
+            grille,
+            colonne_debut_cam,
+            ligne_debut_cam,
+            taille_case_cam,
+            facteur_zoom,
+        )
+        self.dessiner_maisons(
+            grille.maisons,
+            colonne_debut_cam,
+            ligne_debut_cam,
+            taille_case_cam,
+            facteur_zoom,
+        )
+        self.dessiner_usines(
+            grille.usines,
+            colonne_debut_cam,
+            ligne_debut_cam,
+            taille_case_cam,
+            facteur_zoom,
+        )
         if voitures is not None:
-            self.dessiner_voitures(voitures)
+            self.dessiner_voitures(
+                voitures,
+                colonne_debut_cam,
+                ligne_debut_cam,
+                taille_case_cam,
+                facteur_zoom,
+            )
         else:
             pass
         self.dessiner_bandeau_score(score)

@@ -29,21 +29,32 @@ def executer_jeu() -> None:
 
     en_cours: bool = True
     while en_cours:
+        parametres_camera: tuple[float, float, float, float] = (
+            moteur_jeu.obtenir_bornes_grille_camera()
+        )
         for evenement in pygame.event.get():
             if evenement.type == pygame.QUIT:
                 en_cours = False
             else:
                 if not moteur_jeu.partie_perdue:
-                    gestionnaire_entrees.gerer_evenement(evenement, grille)
+                    gestionnaire_entrees.gerer_evenement(
+                        evenement,
+                        grille,
+                        parametres_camera,
+                    )
                 else:
                     pass
 
         moteur_jeu.mettre_a_jour()
+        parametres_camera_rendu: tuple[float, float, float, float] = (
+            moteur_jeu.obtenir_bornes_grille_camera()
+        )
         afficheur.afficher(
             grille,
             moteur_jeu.voitures,
             moteur_jeu.score,
             moteur_jeu.partie_perdue,
+            parametres_camera_rendu,
         )
         horloge.tick(FPS)
 
