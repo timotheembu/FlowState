@@ -42,4 +42,4 @@ mini-motorways-clone/
 - [x] **Étape 2 :** Modèles `Maison` et `Usine`, placement sur la grille et rendu graphique différencié par couleur.
 - [x] **Étape 3 :** Tracé et effacement des routes à la souris.
 - [x] **Étape 4 :** Algorithme de pathfinding A\*.
-- [ ] **Étape 5 :** Génération, déplacement des voitures et simulation du trafic.
+- [x] **Étape 5 :** Génération, déplacement des voitures et simulation du trafic.

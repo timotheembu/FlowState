@@ -8,6 +8,7 @@ from src.config import (
     COULEUR_FOND,
     COULEUR_GRILLE,
     COULEUR_ROUTE,
+    DECALAGE_CENTRE_CASE,
     DECALAGE_VOISIN_NEGATIF,
     DECALAGE_VOISIN_POSITIF,
     EPAISSEUR_CONTOUR_USINE,
@@ -21,10 +22,12 @@ from src.config import (
     MARGE_USINE,
     RAYON_BORDURE_MAISON,
     RAYON_BORDURE_USINE,
+    RAYON_CONTOUR_VOITURE,
     RAYON_NOEUD_ROUTE,
+    RAYON_VOITURE,
     TAILLE_CASE,
 )
-from src.models.entity import Maison, Usine
+from src.models.entity import Maison, Usine, Voiture
 from src.models.grid import Grid
 
 
@@ -263,15 +266,54 @@ class Renderer:
                 else:
                     pass
 
-    def afficher(self, grille: Grid) -> None:
+    def dessiner_voitures(self, voitures: list[Voiture]) -> None:
+        """Dessine chaque voiture de façon fluide à ses coordonnées exactes.
+
+        Args:
+            voitures: Liste des instances de Voiture en circulation.
+        """
+        for voiture in voitures:
+            centre_x: int = int(
+                (voiture.position_colonne + DECALAGE_CENTRE_CASE)
+                * TAILLE_CASE
+            )
+            centre_y: int = int(
+                (voiture.position_ligne + DECALAGE_CENTRE_CASE)
+                * TAILLE_CASE
+            )
+            centre_voiture: tuple[int, int] = (centre_x, centre_y)
+            pygame.draw.circle(
+                self.ecran,
+                voiture.couleur,
+                centre_voiture,
+                RAYON_VOITURE,
+            )
+            pygame.draw.circle(
+                self.ecran,
+                COULEUR_CONTOUR_BATIMENT,
+                centre_voiture,
+                RAYON_VOITURE,
+                width=RAYON_CONTOUR_VOITURE,
+            )
+
+    def afficher(
+        self,
+        grille: Grid,
+        voitures: list[Voiture] | None = None,
+    ) -> None:
         """Effectue le rendu complet d'une frame et met à jour l'écran.
 
         Args:
             grille: Instance du modèle Grid à afficher.
+            voitures: Liste optionnelle des voitures actives à dessiner.
         """
         self.dessiner_fond()
         self.dessiner_grille(grille)
         self.dessiner_routes(grille)
         self.dessiner_maisons(grille.maisons)
         self.dessiner_usines(grille.usines)
+        if voitures is not None:
+            self.dessiner_voitures(voitures)
+        else:
+            pass
         pygame.display.flip()

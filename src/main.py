@@ -10,6 +10,7 @@ from src.config import (
     TITRE_FENETRE,
     USINES_TEST,
 )
+from src.controllers.game_engine import GameEngine
 from src.controllers.input_handler import InputHandler
 from src.models.entity import Maison, Usine
 from src.models.grid import Grid
@@ -43,6 +44,7 @@ def executer_jeu() -> None:
     initialiser_batiments_test(grille)
     afficheur: Renderer = Renderer(ecran)
     gestionnaire_entrees: InputHandler = InputHandler()
+    moteur_jeu: GameEngine = GameEngine(grille)
 
     en_cours: bool = True
     while en_cours:
@@ -52,7 +54,8 @@ def executer_jeu() -> None:
             else:
                 gestionnaire_entrees.gerer_evenement(evenement, grille)
 
-        afficheur.afficher(grille)
+        moteur_jeu.mettre_a_jour()
+        afficheur.afficher(grille, moteur_jeu.voitures)
         horloge.tick(FPS)
 
     pygame.quit()

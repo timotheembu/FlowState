@@ -58,6 +58,21 @@ DIRECTIONS_ORTHOGONALES: list[tuple[int, int]] = [
     (DECALAGE_VOISIN_POSITIF, DECALAGE_VOISIN_NUL),
 ]
 
+# Paramètres de génération, de déplacement et de trafic des voitures
+INTERVALLE_APPARITION_VOITURE: int = 120
+NB_MAX_VOITURES_PAR_MAISON: int = 2
+COMPTEUR_INITIAL_FRAMES: int = 0
+COMPTEUR_INITIAL_LIVRAISONS: int = 0
+LONGUEUR_MINIMALE_ITINERAIRE: int = 2
+INDICE_PREMIERE_ETAPE_ITINERAIRE: int = 1
+VITESSE_VOITURE: float = 0.05
+DISTANCE_MIN_SECURITE_VOITURE: float = 0.85
+SEUIL_ARRIVEE_ETAPE: float = 0.001
+DISTANCE_NULLE: float = 0.0
+RAYON_VOITURE: int = 6
+RAYON_CONTOUR_VOITURE: int = 1
+DECALAGE_CENTRE_CASE: float = 0.5
+
 # Constantes de coordonnées et dimensions pour les tests unitaires
 TAILLE_GRILLE_TEST: int = 10
 INDICE_TEST_ZERO: int = 0

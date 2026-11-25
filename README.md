@@ -13,13 +13,14 @@ FlowState/
 │   ├── models/                 # Logique métier pure (aucun import de pygame)
 │   │   ├── __init__.py
 │   │   ├── grid.py             # Matrice spatiale et état des cases
-│   │   ├── entity.py           # Classes Maison et Usine
+│   │   ├── entity.py           # Classes Maison, Usine et Voiture
 │   │   └── pathfinding.py      # Algorithme A* isolé
 │   ├── views/                  # Rendu graphique Pygame uniquement
 │   │   ├── __init__.py
 │   │   └── renderer.py         # Dessin de la grille et des entités
 │   └── controllers/            # Gestion du temps et des événements utilisateur
 │       ├── __init__.py
+│       ├── game_engine.py      # Simulation du trafic et génération des voitures
 │       └── input_handler.py    # Tracé et effacement des routes à la souris
 ├── tests/                      # Tests unitaires
 │   ├── __init__.py
