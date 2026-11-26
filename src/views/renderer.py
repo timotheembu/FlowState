@@ -14,6 +14,8 @@ from src.config import (
     COORDONNEE_CAMERA_ORIGINE_FLOAT,
     COORDONNEE_ORIGINE,
     COULEUR_AUTOROUTE,
+    COULEUR_BANDEAU_MODE_EDITION,
+    COULEUR_BANDEAU_MODE_JEU,
     COULEUR_BORDURE_AUTOROUTE,
     COULEUR_BORDURE_PONT,
     COULEUR_BORDURE_ROUTE,
@@ -71,6 +73,7 @@ from src.config import (
     FACTEUR_ECHELLE_UNITE,
     HAUTEUR_ARCHE_AUTOROUTE,
     HAUTEUR_BANDEAU_HORLOGE,
+    HAUTEUR_BANDEAU_MODE,
     HAUTEUR_BANDEAU_ROUTES,
     HAUTEUR_BANDEAU_SCORE,
     HAUTEUR_BOUTON_CARTE,
@@ -84,6 +87,7 @@ from src.config import (
     JOURS_SEMAINE,
     LARGEUR_AUTOROUTE,
     LARGEUR_BANDEAU_HORLOGE,
+    LARGEUR_BANDEAU_MODE,
     LARGEUR_BANDEAU_ROUTES,
     LARGEUR_BANDEAU_SCORE,
     LARGEUR_BOUTON_CARTE,
@@ -93,11 +97,14 @@ from src.config import (
     LARGEUR_FENETRE,
     LARGEUR_PANNEAU_DEFAITE,
     LARGEUR_PANNEAU_HEBDOMADAIRE,
+    LIBELLE_MODE_EDITION_HUD,
+    LIBELLE_MODE_JEU_HUD,
     LONGUEUR_MINIMALE_ITINERAIRE,
     MARGE_INTERIEURE_DEMANDE,
     MARGE_MAISON,
     MARGE_SOMMET_MONTAGNE,
     MARGE_USINE,
+    MODE_EDITION_INITIAL,
     NB_COLONNES_GRILLE_DEMANDES,
     NB_OPTIONS_HEBDOMADAIRES,
     NB_SEGMENTS_ARCHE_AUTOROUTE,
@@ -110,6 +117,8 @@ from src.config import (
     PAS_INCREMENT_COMPTEUR,
     POSITION_BANDEAU_HORLOGE_X,
     POSITION_BANDEAU_HORLOGE_Y,
+    POSITION_BANDEAU_MODE_X,
+    POSITION_BANDEAU_MODE_Y,
     POSITION_BANDEAU_ROUTES_X,
     POSITION_BANDEAU_ROUTES_Y,
     POSITION_BANDEAU_SCORE_X,
@@ -1404,6 +1413,48 @@ class Renderer:
             )
             self.ecran.blit(surface_texte, rectangle_texte)
 
+    def dessiner_bandeau_mode_edition(self, mode_edition: bool) -> None:
+        """Dessine l'indicateur cliquable du Mode Jeu / Mode Édition.
+
+        Args:
+            mode_edition: True si le Mode Édition est actif, False sinon.
+        """
+        rectangle_mode: pygame.Rect = pygame.Rect(
+            POSITION_BANDEAU_MODE_X,
+            POSITION_BANDEAU_MODE_Y,
+            LARGEUR_BANDEAU_MODE,
+            HAUTEUR_BANDEAU_MODE,
+        )
+        if mode_edition:
+            couleur_fond: tuple[int, int, int] = COULEUR_BANDEAU_MODE_EDITION
+            libelle_mode: str = LIBELLE_MODE_EDITION_HUD
+        else:
+            couleur_fond = COULEUR_BANDEAU_MODE_JEU
+            libelle_mode = LIBELLE_MODE_JEU_HUD
+
+        pygame.draw.rect(
+            self.ecran,
+            couleur_fond,
+            rectangle_mode,
+            border_radius=RAYON_BORDURE_INTERFACE,
+        )
+        pygame.draw.rect(
+            self.ecran,
+            COULEUR_CONTOUR_BATIMENT,
+            rectangle_mode,
+            width=EPAISSEUR_CONTOUR_INTERFACE,
+            border_radius=RAYON_BORDURE_INTERFACE,
+        )
+        surface_texte: pygame.Surface = self.police_outil.render(
+            libelle_mode,
+            True,
+            COULEUR_TEXTE_INTERFACE,
+        )
+        rectangle_texte: pygame.Rect = surface_texte.get_rect(
+            center=rectangle_mode.center
+        )
+        self.ecran.blit(surface_texte, rectangle_texte)
+
     def dessiner_horloge_hud(
         self,
         nom_jour: str,
@@ -1746,6 +1797,7 @@ class Renderer:
         progression_jour: float = COORDONNEE_CAMERA_ORIGINE_FLOAT,
         choix_hebdomadaire_actif: bool = False,
         offres_hebdomadaires: list[dict[str, int | str]] | None = None,
+        mode_edition: bool = MODE_EDITION_INITIAL,
     ) -> None:
         """Effectue le rendu complet d'une frame avec caméra et HUD fixe.
 
@@ -1757,6 +1809,12 @@ class Renderer:
             parametres_camera: Tuple optionnel (colonne_debut, ligne_debut,
                 taille_case_camera, facteur_zoom).
             outil_actif: Outil de construction sélectionné dans le HUD.
+            nom_jour: Nom du jour actuel à afficher sur l'horloge HUD.
+            numero_semaine: Numéro de la semaine en cours.
+            progression_jour: Fraction de la journée écoulée (0.0 à 1.0).
+            choix_hebdomadaire_actif: True si la modale du lundi est active.
+            offres_hebdomadaires: Liste optionnelle des 2 offres du lundi.
+            mode_edition: True pour afficher la grille et la barre d'outils.
         """
         if parametres_camera is not None:
             (
@@ -1779,12 +1837,15 @@ class Renderer:
             taille_case_cam,
             facteur_zoom,
         )
-        self.dessiner_grille(
-            grille,
-            colonne_debut_cam,
-            ligne_debut_cam,
-            taille_case_cam,
-        )
+        if mode_edition:
+            self.dessiner_grille(
+                grille,
+                colonne_debut_cam,
+                ligne_debut_cam,
+                taille_case_cam,
+            )
+        else:
+            pass
         self.dessiner_routes(
             grille,
             colonne_debut_cam,
@@ -1825,7 +1886,11 @@ class Renderer:
             pass
         self.dessiner_bandeau_score(score)
         self.dessiner_bandeau_routes(grille.stock_routes)
-        self.dessiner_barre_outils_bonus(grille, outil_actif)
+        self.dessiner_bandeau_mode_edition(mode_edition)
+        if mode_edition:
+            self.dessiner_barre_outils_bonus(grille, outil_actif)
+        else:
+            pass
         self.dessiner_horloge_hud(
             nom_jour,
             numero_semaine,

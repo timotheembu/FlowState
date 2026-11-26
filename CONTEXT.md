@@ -54,4 +54,4 @@ mini-motorways-clone/
 - [x] **Étape 14 :** Génération et sélection de cartes avec obstacles naturels (`CASE_EAU`, `CASE_MONTAGNE`) empêchant la pose de routes classiques et le spawn de bâtiments.
 - [x] **Étape 15 :** Infrastructures et bonus spéciaux : Ponts (sur `CASE_EAU`), Tunnels (sous `CASE_MONTAGNE`), Feux de circulation, Ronds-points et Autoroutes avec inventaire dédié.
 - [x] **Étape 16 :** Système temporel (horloge visuelle + défilement des jours) et choix hebdomadaire chaque lundi (pause et sélection entre deux lots de routes/bonus).
-- [ ] **Étape 17 :** Mode Édition (touche dédiée pour activer/désactiver le mode construction ; tracé actif uniquement en mode édition et grille masquée en mode jeu normal).
+- [x] **Étape 17 :** Mode Édition (touche dédiée pour activer/désactiver le mode construction ; tracé actif uniquement en mode édition et grille masquée en mode jeu normal).

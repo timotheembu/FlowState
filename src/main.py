@@ -114,6 +114,7 @@ def executer_jeu() -> None:
             moteur_jeu.obtenir_progression_jour(),
             moteur_jeu.choix_hebdomadaire_actif,
             moteur_jeu.offres_hebdomadaires,
+            gestionnaire_entrees.mode_edition,
         )
         horloge.tick(FPS)
 

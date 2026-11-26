@@ -18,6 +18,7 @@ from src.config import (
     ESPACEMENT_CARTES_OFFRE_X,
     FACTEUR_DOUBLE_MARGE,
     FACTEUR_ECHELLE_UNITE,
+    HAUTEUR_BANDEAU_MODE,
     HAUTEUR_BOUTON_OUTIL,
     HAUTEUR_CARTE_OFFRE_HEBDO,
     HAUTEUR_FENETRE,
@@ -28,18 +29,24 @@ from src.config import (
     INDICE_DERNIERE_CASE_TRACEE,
     INDICE_OPTION_HEBDOMADAIRE_1,
     INDICE_OPTION_HEBDOMADAIRE_2,
+    LARGEUR_BANDEAU_MODE,
     LARGEUR_BOUTON_OUTIL,
     LARGEUR_CARTE_OFFRE_HEBDO,
     LARGEUR_FENETRE,
+    MODE_EDITION_INITIAL,
     NB_OPTIONS_HEBDOMADAIRES,
     OUTIL_AUTOROUTE,
     OUTIL_FEU,
     OUTIL_ROND_POINT,
     OUTIL_ROUTE,
+    POSITION_BANDEAU_MODE_X,
+    POSITION_BANDEAU_MODE_Y,
     POSITION_BARRE_OUTILS_X,
     POSITION_BARRE_OUTILS_Y,
     TAILLE_CASE,
     TAILLE_MIN_HISTORIQUE_ELAGAGE,
+    TOUCHE_MODE_EDITION,
+    TOUCHE_MODE_EDITION_TAB,
 )
 from src.models.entity import Maison, Usine
 from src.models.grid import Grid
@@ -59,6 +66,45 @@ class InputHandler:
         self.usine_en_reorientation: Usine | None = None
         self.outil_actif: int = OUTIL_ROUTE
         self.depart_autoroute_selectionne: tuple[int, int] | None = None
+        self.mode_edition: bool = MODE_EDITION_INITIAL
+
+    def basculer_mode_edition(self) -> None:
+        """Active ou désactive le Mode Édition et réinitialise les tracés."""
+        if self.mode_edition:
+            self.mode_edition = False
+        else:
+            self.mode_edition = True
+        self.derniere_case_tracee = None
+        self.historique_trace_courant = []
+        self.maison_en_reorientation = None
+        self.usine_en_reorientation = None
+        self.depart_autoroute_selectionne = None
+
+    def verifier_clic_bouton_mode_hud(
+        self,
+        position_x: int,
+        position_y: int,
+    ) -> bool:
+        """Vérifie si un clic souris active le bouton de bascule Mode Édition.
+
+        Args:
+            position_x: Coordonnée X du clic en pixels écran.
+            position_y: Coordonnée Y du clic en pixels écran.
+
+        Returns:
+            True si le bouton Mode Édition du HUD a été cliqué, False sinon.
+        """
+        rectangle_mode: pygame.Rect = pygame.Rect(
+            POSITION_BANDEAU_MODE_X,
+            POSITION_BANDEAU_MODE_Y,
+            LARGEUR_BANDEAU_MODE,
+            HAUTEUR_BANDEAU_MODE,
+        )
+        if rectangle_mode.collidepoint((position_x, position_y)):
+            self.basculer_mode_edition()
+            return True
+        else:
+            return False
 
     def definir_outil_actif(self, nouvel_outil: int) -> None:
         """Change l'outil de construction actif et réinitialise la sélection.
@@ -735,6 +781,36 @@ class InputHandler:
             return
         else:
             pass
+
+        if evenement.type == pygame.KEYDOWN:
+            if (
+                evenement.key == TOUCHE_MODE_EDITION
+                or evenement.key == TOUCHE_MODE_EDITION_TAB
+            ):
+                self.basculer_mode_edition()
+                return
+            else:
+                pass
+        else:
+            pass
+
+        if (
+            evenement.type == pygame.MOUSEBUTTONDOWN
+            and evenement.button == BOUTON_SOURIS_GAUCHE
+        ):
+            pos_clic_x, pos_clic_y = evenement.pos
+            if self.verifier_clic_bouton_mode_hud(pos_clic_x, pos_clic_y):
+                return
+            else:
+                pass
+        else:
+            pass
+
+        if not self.mode_edition:
+            return
+        else:
+            pass
+
         if parametres_camera is not None:
             colonne_debut, ligne_debut, taille_case_cam, _ = parametres_camera
         else:
