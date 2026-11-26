@@ -67,56 +67,64 @@ def executer_jeu() -> None:
     horloge: pygame.time.Clock = pygame.time.Clock()
 
     afficheur: Renderer = Renderer(ecran)
-    carte_choisie: str | None = choisir_carte_accueil(afficheur, horloge)
-    if carte_choisie is None:
-        pygame.quit()
-        return
-    else:
-        pass
+    application_active: bool = True
 
-    grille: Grid = Grid()
-    grille.generer_relief_carte(carte_choisie)
-    gestionnaire_entrees: InputHandler = InputHandler()
-    moteur_jeu: GameEngine = GameEngine(grille)
+    while application_active:
+        carte_choisie: str | None = choisir_carte_accueil(afficheur, horloge)
+        if carte_choisie is None:
+            application_active = False
+        else:
+            afficheur.definir_theme_carte(carte_choisie)
+            grille: Grid = Grid()
+            grille.generer_relief_carte(carte_choisie)
+            gestionnaire_entrees: InputHandler = InputHandler()
+            moteur_jeu: GameEngine = GameEngine(grille)
 
-    en_cours: bool = True
-    while en_cours:
-        parametres_camera: tuple[float, float, float, float] = (
-            moteur_jeu.obtenir_bornes_grille_camera()
-        )
-        for evenement in pygame.event.get():
-            if evenement.type == pygame.QUIT:
-                en_cours = False
-            else:
-                if not moteur_jeu.partie_perdue:
-                    gestionnaire_entrees.gerer_evenement(
-                        evenement,
-                        grille,
-                        parametres_camera,
-                        moteur_jeu,
-                    )
+            en_cours: bool = True
+            while en_cours:
+                parametres_camera: tuple[float, float, float, float] = (
+                    moteur_jeu.obtenir_bornes_grille_camera()
+                )
+                for evenement in pygame.event.get():
+                    if evenement.type == pygame.QUIT:
+                        en_cours = False
+                        application_active = False
+                    else:
+                        if not moteur_jeu.partie_perdue:
+                            gestionnaire_entrees.gerer_evenement(
+                                evenement,
+                                grille,
+                                parametres_camera,
+                                moteur_jeu,
+                            )
+                        else:
+                            pass
+
+                if gestionnaire_entrees.demande_retour_menu:
+                    en_cours = False
                 else:
-                    pass
-
-        moteur_jeu.mettre_a_jour()
-        parametres_camera_rendu: tuple[float, float, float, float] = (
-            moteur_jeu.obtenir_bornes_grille_camera()
-        )
-        afficheur.afficher(
-            grille,
-            moteur_jeu.voitures,
-            moteur_jeu.score,
-            moteur_jeu.partie_perdue,
-            parametres_camera_rendu,
-            gestionnaire_entrees.outil_actif,
-            moteur_jeu.obtenir_nom_jour_courant(),
-            moteur_jeu.numero_semaine,
-            moteur_jeu.obtenir_progression_jour(),
-            moteur_jeu.choix_hebdomadaire_actif,
-            moteur_jeu.offres_hebdomadaires,
-            gestionnaire_entrees.mode_edition,
-        )
-        horloge.tick(FPS)
+                    moteur_jeu.mettre_a_jour()
+                    parametres_camera_rendu: tuple[
+                        float,
+                        float,
+                        float,
+                        float,
+                    ] = moteur_jeu.obtenir_bornes_grille_camera()
+                    afficheur.afficher(
+                        grille,
+                        moteur_jeu.voitures,
+                        moteur_jeu.score,
+                        moteur_jeu.partie_perdue,
+                        parametres_camera_rendu,
+                        gestionnaire_entrees.outil_actif,
+                        moteur_jeu.obtenir_nom_jour_courant(),
+                        moteur_jeu.numero_semaine,
+                        moteur_jeu.obtenir_progression_jour(),
+                        moteur_jeu.choix_hebdomadaire_actif,
+                        moteur_jeu.offres_hebdomadaires,
+                        gestionnaire_entrees.mode_edition,
+                    )
+                    horloge.tick(FPS)
 
     pygame.quit()
 

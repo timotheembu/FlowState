@@ -8,12 +8,18 @@ from typing import TYPE_CHECKING
 from src.config import (
     BOUTON_SOURIS_DROIT,
     BOUTON_SOURIS_GAUCHE,
+    CENTRE_BOUTON_RETOUR_X,
+    CENTRE_BOUTON_RETOUR_Y,
+    CENTRE_DOCK_X,
+    CENTRE_DOCK_Y,
     COORDONNEE_CAMERA_ORIGINE_FLOAT,
     DECALAGE_CARTES_MODALE_HEBDO_Y,
     DECALAGE_VOISIN_NEGATIF,
     DECALAGE_VOISIN_NUL,
     DECALAGE_VOISIN_POSITIF,
+    DEMI_TAILLE_LOSANGE_ROUTES,
     DIVISEUR_MOITIE,
+    ESPACEMENT_BOUTONS_DOCK_X,
     ESPACEMENT_BOUTONS_OUTIL_X,
     ESPACEMENT_CARTES_OFFRE_X,
     FACTEUR_DOUBLE_MARGE,
@@ -27,6 +33,11 @@ from src.config import (
     INDICE_BOUTON_DROIT,
     INDICE_BOUTON_GAUCHE,
     INDICE_DERNIERE_CASE_TRACEE,
+    INDICE_DOCK_AUTOROUTE,
+    INDICE_DOCK_EDITION,
+    INDICE_DOCK_FEU,
+    INDICE_DOCK_PONT_TUNNEL,
+    INDICE_DOCK_ROND_POINT,
     INDICE_OPTION_HEBDOMADAIRE_1,
     INDICE_OPTION_HEBDOMADAIRE_2,
     LARGEUR_BANDEAU_MODE,
@@ -43,6 +54,8 @@ from src.config import (
     POSITION_BANDEAU_MODE_Y,
     POSITION_BARRE_OUTILS_X,
     POSITION_BARRE_OUTILS_Y,
+    RAYON_BOUTON_DOCK,
+    RAYON_BOUTON_RETOUR,
     TAILLE_CASE,
     TAILLE_MIN_HISTORIQUE_ELAGAGE,
     TOUCHE_MODE_EDITION,
@@ -67,6 +80,58 @@ class InputHandler:
         self.outil_actif: int = OUTIL_ROUTE
         self.depart_autoroute_selectionne: tuple[int, int] | None = None
         self.mode_edition: bool = MODE_EDITION_INITIAL
+        self.demande_retour_menu: bool = False
+
+    def est_clic_dans_cercle(
+        self,
+        position_x: int,
+        position_y: int,
+        centre_x: int,
+        centre_y: int,
+        rayon: int,
+    ) -> bool:
+        """Vérifie si un point (x, y) se trouve à l'intérieur d'un disque.
+
+        Args:
+            position_x: Coordonnée X du clic en pixels.
+            position_y: Coordonnée Y du clic en pixels.
+            centre_x: Coordonnée X du centre du bouton circulaire.
+            centre_y: Coordonnée Y du centre du bouton circulaire.
+            rayon: Rayon du bouton circulaire en pixels.
+
+        Returns:
+            True si le clic est dans le cercle, False sinon.
+        """
+        ecart_x: int = position_x - centre_x
+        ecart_y: int = position_y - centre_y
+        distance_carree: int = ecart_x * ecart_x + ecart_y * ecart_y
+        return distance_carree <= rayon * rayon
+
+    def verifier_clic_bouton_retour_hud(
+        self,
+        position_x: int,
+        position_y: int,
+    ) -> bool:
+        """Vérifie si le joueur clique sur le bouton retour en haut à gauche.
+
+        Args:
+            position_x: Coordonnée X du clic en pixels écran.
+            position_y: Coordonnée Y du clic en pixels écran.
+
+        Returns:
+            True si le bouton retour a été cliqué, False sinon.
+        """
+        if self.est_clic_dans_cercle(
+            position_x,
+            position_y,
+            CENTRE_BOUTON_RETOUR_X,
+            CENTRE_BOUTON_RETOUR_Y,
+            RAYON_BOUTON_RETOUR,
+        ):
+            self.demande_retour_menu = True
+            return True
+        else:
+            return False
 
     def basculer_mode_edition(self) -> None:
         """Active ou désactive le Mode Édition et réinitialise les tracés."""
@@ -87,6 +152,9 @@ class InputHandler:
     ) -> bool:
         """Vérifie si un clic souris active le bouton de bascule Mode Édition.
 
+        Prend en compte le bouton circulaire Édition/Corbeille à droite du dock
+        inférieur ainsi que l'ancien rectangle de bandeau.
+
         Args:
             position_x: Coordonnée X du clic en pixels écran.
             position_y: Coordonnée Y du clic en pixels écran.
@@ -94,6 +162,21 @@ class InputHandler:
         Returns:
             True si le bouton Mode Édition du HUD a été cliqué, False sinon.
         """
+        centre_edition_dock_x: int = (
+            CENTRE_DOCK_X + INDICE_DOCK_EDITION * ESPACEMENT_BOUTONS_DOCK_X
+        )
+        if self.est_clic_dans_cercle(
+            position_x,
+            position_y,
+            centre_edition_dock_x,
+            CENTRE_DOCK_Y,
+            RAYON_BOUTON_DOCK,
+        ):
+            self.basculer_mode_edition()
+            return True
+        else:
+            pass
+
         rectangle_mode: pygame.Rect = pygame.Rect(
             POSITION_BANDEAU_MODE_X,
             POSITION_BANDEAU_MODE_Y,
@@ -122,15 +205,46 @@ class InputHandler:
         position_x: int,
         position_y: int,
     ) -> bool:
-        """Vérifie si un clic souris sélectionne un bouton d'outil dans le HUD.
+        """Vérifie si un clic souris sélectionne un outil du dock inférieur.
 
         Args:
             position_x: Coordonnée X du clic en pixels écran.
             position_y: Coordonnée Y du clic en pixels écran.
 
         Returns:
-            True si un bouton d'outil du HUD a été cliqué, False sinon.
+            True si un bouton d'outil du dock HUD a été cliqué, False sinon.
         """
+        distance_manhattan_losange: int = (
+            abs(position_x - CENTRE_DOCK_X) + abs(position_y - CENTRE_DOCK_Y)
+        )
+        if distance_manhattan_losange <= DEMI_TAILLE_LOSANGE_ROUTES:
+            self.definir_outil_actif(OUTIL_ROUTE)
+            return True
+        else:
+            pass
+
+        boutons_dock_outils: list[tuple[int, int]] = [
+            (INDICE_DOCK_ROND_POINT, OUTIL_ROND_POINT),
+            (INDICE_DOCK_FEU, OUTIL_FEU),
+            (INDICE_DOCK_PONT_TUNNEL, OUTIL_ROUTE),
+            (INDICE_DOCK_AUTOROUTE, OUTIL_AUTOROUTE),
+        ]
+        for position_relative, code_outil_dock in boutons_dock_outils:
+            centre_bouton_x: int = (
+                CENTRE_DOCK_X + position_relative * ESPACEMENT_BOUTONS_DOCK_X
+            )
+            if self.est_clic_dans_cercle(
+                position_x,
+                position_y,
+                centre_bouton_x,
+                CENTRE_DOCK_Y,
+                RAYON_BOUTON_DOCK,
+            ):
+                self.definir_outil_actif(code_outil_dock)
+                return True
+            else:
+                pass
+
         outils_hud: list[int] = [
             OUTIL_ROUTE,
             OUTIL_FEU,
@@ -799,6 +913,10 @@ class InputHandler:
             and evenement.button == BOUTON_SOURIS_GAUCHE
         ):
             pos_clic_x, pos_clic_y = evenement.pos
+            if self.verifier_clic_bouton_retour_hud(pos_clic_x, pos_clic_y):
+                return
+            else:
+                pass
             if self.verifier_clic_bouton_mode_hud(pos_clic_x, pos_clic_y):
                 return
             else:

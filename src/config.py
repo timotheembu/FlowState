@@ -26,30 +26,99 @@ CASE_PONT: int = 6
 CASE_TUNNEL: int = 7
 CASE_ROND_POINT: int = 8
 
-# Couleurs de l'environnement (R, G, B)
-COULEUR_FOND: tuple[int, int, int] = (245, 242, 235)
-COULEUR_GRILLE: tuple[int, int, int] = (220, 216, 208)
-COULEUR_ROUTE: tuple[int, int, int] = (85, 85, 90)
-COULEUR_BORDURE_ROUTE: tuple[int, int, int] = (55, 55, 60)
-COULEUR_EAU: tuple[int, int, int] = (116, 185, 235)
-COULEUR_MONTAGNE: tuple[int, int, int] = (145, 138, 128)
-COULEUR_SOMMET_MONTAGNE: tuple[int, int, int] = (195, 190, 182)
+# Couleurs de l'environnement (R, G, B) — Thème par défaut "Crème & Sauge"
+COULEUR_FOND: tuple[int, int, int] = (239, 232, 220)
+COULEUR_GRILLE: tuple[int, int, int] = (224, 216, 204)
+COULEUR_ROUTE: tuple[int, int, int] = (58, 63, 72)
+COULEUR_BORDURE_ROUTE: tuple[int, int, int] = (46, 50, 58)
+COULEUR_EAU: tuple[int, int, int] = (158, 204, 176)
+COULEUR_BORDURE_EAU: tuple[int, int, int] = (186, 222, 200)
+COULEUR_MONTAGNE: tuple[int, int, int] = (244, 194, 158)
+COULEUR_BORDURE_MONTAGNE: tuple[int, int, int] = (252, 218, 192)
+COULEUR_SOMMET_MONTAGNE: tuple[int, int, int] = (232, 176, 138)
 MARGE_SOMMET_MONTAGNE: int = 6
 RAYON_BORDURE_MONTAGNE: int = 4
 
-# Palette de couleurs des entités (R, G, B)
-COULEUR_ROUGE: tuple[int, int, int] = (229, 75, 75)
-COULEUR_BLEUE: tuple[int, int, int] = (65, 131, 215)
-COULEUR_JAUNE: tuple[int, int, int] = (245, 190, 55)
-COULEUR_VERTE: tuple[int, int, int] = (72, 187, 120)
-COULEUR_VIOLETTE: tuple[int, int, int] = (159, 122, 234)
-COULEUR_CONTOUR_BATIMENT: tuple[int, int, int] = (60, 60, 60)
+# Thèmes graphiques complets inspirés de Mini Motorways (Étape 18)
+THEME_CREME_SAUGE: str = "Crème & Sauge"
+THEME_CORAIL_LAGON: str = "Corail & Lagon"
+THEME_MODE_NUIT: str = "Mode Nuit"
+
+COULEUR_FOND_CREME_SAUGE: tuple[int, int, int] = (239, 232, 220)
+COULEUR_EAU_CREME_SAUGE: tuple[int, int, int] = (158, 204, 176)
+COULEUR_BORDURE_EAU_CREME_SAUGE: tuple[int, int, int] = (186, 222, 200)
+COULEUR_RELIEF_CREME_SAUGE: tuple[int, int, int] = (244, 194, 158)
+COULEUR_BORDURE_RELIEF_CREME_SAUGE: tuple[int, int, int] = (252, 218, 192)
+COULEUR_SOMMET_CREME_SAUGE: tuple[int, int, int] = (232, 176, 138)
+COULEUR_GRILLE_CREME_SAUGE: tuple[int, int, int] = (224, 216, 204)
+COULEUR_TEXTE_CREME_SAUGE: tuple[int, int, int] = (45, 48, 56)
+
+COULEUR_FOND_CORAIL_LAGON: tuple[int, int, int] = (226, 114, 114)
+COULEUR_EAU_CORAIL_LAGON: tuple[int, int, int] = (173, 212, 219)
+COULEUR_BORDURE_EAU_CORAIL_LAGON: tuple[int, int, int] = (202, 230, 235)
+COULEUR_RELIEF_CORAIL_LAGON: tuple[int, int, int] = (194, 82, 92)
+COULEUR_BORDURE_RELIEF_CORAIL_LAGON: tuple[int, int, int] = (212, 102, 110)
+COULEUR_SOMMET_CORAIL_LAGON: tuple[int, int, int] = (172, 68, 78)
+COULEUR_GRILLE_CORAIL_LAGON: tuple[int, int, int] = (210, 100, 100)
+COULEUR_TEXTE_CORAIL_LAGON: tuple[int, int, int] = (250, 245, 242)
+
+COULEUR_FOND_MODE_NUIT: tuple[int, int, int] = (38, 43, 52)
+COULEUR_EAU_MODE_NUIT: tuple[int, int, int] = (56, 82, 108)
+COULEUR_BORDURE_EAU_MODE_NUIT: tuple[int, int, int] = (74, 104, 134)
+COULEUR_RELIEF_MODE_NUIT: tuple[int, int, int] = (54, 60, 72)
+COULEUR_BORDURE_RELIEF_MODE_NUIT: tuple[int, int, int] = (68, 76, 90)
+COULEUR_SOMMET_MODE_NUIT: tuple[int, int, int] = (46, 52, 64)
+COULEUR_GRILLE_MODE_NUIT: tuple[int, int, int] = (52, 58, 70)
+COULEUR_TEXTE_MODE_NUIT: tuple[int, int, int] = (235, 238, 245)
+
+THEMES_GRAPHIQUES: dict[str, dict[str, tuple[int, int, int]]] = {
+    THEME_CREME_SAUGE: {
+        "fond": COULEUR_FOND_CREME_SAUGE,
+        "eau": COULEUR_EAU_CREME_SAUGE,
+        "bordure_eau": COULEUR_BORDURE_EAU_CREME_SAUGE,
+        "montagne": COULEUR_RELIEF_CREME_SAUGE,
+        "bordure_montagne": COULEUR_BORDURE_RELIEF_CREME_SAUGE,
+        "sommet_montagne": COULEUR_SOMMET_CREME_SAUGE,
+        "grille": COULEUR_GRILLE_CREME_SAUGE,
+        "texte_hud": COULEUR_TEXTE_CREME_SAUGE,
+    },
+    THEME_CORAIL_LAGON: {
+        "fond": COULEUR_FOND_CORAIL_LAGON,
+        "eau": COULEUR_EAU_CORAIL_LAGON,
+        "bordure_eau": COULEUR_BORDURE_EAU_CORAIL_LAGON,
+        "montagne": COULEUR_RELIEF_CORAIL_LAGON,
+        "bordure_montagne": COULEUR_BORDURE_RELIEF_CORAIL_LAGON,
+        "sommet_montagne": COULEUR_SOMMET_CORAIL_LAGON,
+        "grille": COULEUR_GRILLE_CORAIL_LAGON,
+        "texte_hud": COULEUR_TEXTE_CORAIL_LAGON,
+    },
+    THEME_MODE_NUIT: {
+        "fond": COULEUR_FOND_MODE_NUIT,
+        "eau": COULEUR_EAU_MODE_NUIT,
+        "bordure_eau": COULEUR_BORDURE_EAU_MODE_NUIT,
+        "montagne": COULEUR_RELIEF_MODE_NUIT,
+        "bordure_montagne": COULEUR_BORDURE_RELIEF_MODE_NUIT,
+        "sommet_montagne": COULEUR_SOMMET_MODE_NUIT,
+        "grille": COULEUR_GRILLE_MODE_NUIT,
+        "texte_hud": COULEUR_TEXTE_MODE_NUIT,
+    },
+}
+
+# Palette de couleurs pastel des entités (R, G, B) — Mini Motorways
+COULEUR_ROUGE: tuple[int, int, int] = (235, 104, 100)
+COULEUR_BLEUE: tuple[int, int, int] = (78, 179, 211)
+COULEUR_JAUNE: tuple[int, int, int] = (247, 208, 106)
+COULEUR_VERTE: tuple[int, int, int] = (118, 198, 154)
+COULEUR_VIOLETTE: tuple[int, int, int] = (168, 138, 212)
+COULEUR_ORANGE: tuple[int, int, int] = (242, 148, 92)
+COULEUR_CONTOUR_BATIMENT: tuple[int, int, int] = (52, 56, 64)
 PALETTE_COULEURS_BATIMENTS: list[tuple[int, int, int]] = [
     COULEUR_ROUGE,
     COULEUR_BLEUE,
     COULEUR_JAUNE,
     COULEUR_VERTE,
     COULEUR_VIOLETTE,
+    COULEUR_ORANGE,
 ]
 
 # Paramètres d'affichage des bâtiments dans une case
@@ -274,17 +343,17 @@ DISTANCE_MIN_AUTOROUTE_CASES: int = 2
 FACTEUR_HEURISTIQUE_AVEC_AUTOROUTE: float = 0.05
 
 # Couleurs et dimensions d'affichage des infrastructures spéciales
-COULEUR_PONT: tuple[int, int, int] = (150, 120, 85)
-COULEUR_BORDURE_PONT: tuple[int, int, int] = (95, 75, 50)
+COULEUR_PONT: tuple[int, int, int] = (74, 80, 92)
+COULEUR_BORDURE_PONT: tuple[int, int, int] = (225, 220, 210)
 COULEUR_TUNNEL: tuple[int, int, int] = (65, 65, 75)
 COULEUR_ENTREE_TUNNEL: tuple[int, int, int] = (35, 35, 42)
-COULEUR_ROND_POINT: tuple[int, int, int] = (85, 85, 90)
-COULEUR_CENTRE_ROND_POINT: tuple[int, int, int] = (125, 185, 115)
-COULEUR_AUTOROUTE: tuple[int, int, int] = (230, 145, 56)
-COULEUR_BORDURE_AUTOROUTE: tuple[int, int, int] = (140, 80, 25)
-COULEUR_FEU_VERT: tuple[int, int, int] = (72, 207, 110)
-COULEUR_FEU_ROUGE: tuple[int, int, int] = (235, 65, 65)
-COULEUR_OUTIL_ACTIF: tuple[int, int, int] = (205, 228, 248)
+COULEUR_ROND_POINT: tuple[int, int, int] = (58, 63, 72)
+COULEUR_CENTRE_ROND_POINT: tuple[int, int, int] = (158, 204, 176)
+COULEUR_AUTOROUTE: tuple[int, int, int] = (245, 208, 148)
+COULEUR_BORDURE_AUTOROUTE: tuple[int, int, int] = (188, 148, 92)
+COULEUR_FEU_VERT: tuple[int, int, int] = (118, 198, 154)
+COULEUR_FEU_ROUGE: tuple[int, int, int] = (235, 104, 100)
+COULEUR_OUTIL_ACTIF: tuple[int, int, int] = (255, 232, 172)
 RAYON_EXTERIEUR_ROND_POINT: int = 15
 RAYON_INTERIEUR_ROND_POINT: int = 7
 RAYON_ENTREE_TUNNEL: int = 10
@@ -390,3 +459,98 @@ POSITION_BANDEAU_MODE_X: int = 16
 POSITION_BANDEAU_MODE_Y: int = 66
 LARGEUR_BANDEAU_MODE: int = 240
 HAUTEUR_BANDEAU_MODE: int = 38
+
+# Association des cartes aux thèmes graphiques (Étape 18)
+THEME_PAR_CARTE: dict[str, str] = {
+    CARTE_PLAINE: THEME_CREME_SAUGE,
+    CARTE_RIVIERE: THEME_CREME_SAUGE,
+    CARTE_MONTAGNES: THEME_CORAIL_LAGON,
+}
+
+# Paramètres esthétiques : ombres portées, reliefs organiques et bâtiments
+COULEUR_OMBRE_PORTEE: tuple[int, int, int] = (28, 30, 36)
+ALPHA_OMBRE_PORTEE: int = 45
+DECALAGE_OMBRE_X: int = 3
+DECALAGE_OMBRE_Y: int = 4
+DECALAGE_OMBRE_AUTOROUTE_X: int = 6
+DECALAGE_OMBRE_AUTOROUTE_Y: int = 18
+BORDURE_RELIEF_ORGANIQUE: int = 3
+RAYON_SOMMET_RELIEF: int = 11
+COULEUR_SOCLE_MAISON: tuple[int, int, int] = (58, 63, 72)
+LONGUEUR_ALLEE_MAISON: int = 9
+LARGEUR_ALLEE_MAISON: int = 10
+MARGE_TOIT_INTERIEUR_MAISON: int = 3
+ASSOMBRISSEMENT_FAITE_MAISON: int = 18
+COULEUR_CORPS_USINE: tuple[int, int, int] = (58, 63, 72)
+COULEUR_LIGNE_PARKING_USINE: tuple[int, int, int] = (230, 232, 236)
+MARGE_TOIT_USINE: int = 5
+LARGEUR_ZONE_PARKING_USINE: int = 9
+NB_PLACES_PARKING_USINE: int = 3
+EPAISSEUR_LIGNE_PARKING: int = 1
+RAYON_POINT_CENTRE_DEMANDE: int = 1
+DIVISEUR_PARITE_USINE: int = 2
+RAYON_BADGE_AUTOROUTE: int = 11
+BORDURE_BADGE_AUTOROUTE: int = 2
+FACTEUR_BEZIER_QUADRATIQUE: float = 2.0
+PROGRESSION_MILIEU_COURBE: float = 0.5
+
+# Paramètres du HUD minimaliste Mini Motorways (Étape 18)
+JOURS_SEMAINE_ABREGES: dict[str, str] = {
+    "Lundi": "LUN",
+    "Mardi": "MAR",
+    "Mercredi": "MER",
+    "Jeudi": "JEU",
+    "Vendredi": "VEN",
+    "Samedi": "SAM",
+    "Dimanche": "DIM",
+}
+LONGUEUR_ABREVIATION_JOUR: int = 3
+
+# Bouton retour circulaire en haut à gauche
+CENTRE_BOUTON_RETOUR_X: int = 38
+CENTRE_BOUTON_RETOUR_Y: int = 38
+RAYON_BOUTON_RETOUR: int = 20
+TAILLE_FLECHE_RETOUR: int = 7
+EPAISSEUR_FLECHE_RETOUR: int = 2
+COULEUR_FOND_BOUTON_HUD: tuple[int, int, int] = (248, 245, 238)
+COULEUR_ICONE_HUD_SOMBRE: tuple[int, int, int] = (48, 52, 60)
+
+# Score avec épingle (pin) et horloge en haut à droite
+CENTRE_HORLOGE_HUD_X: int = 1040
+CENTRE_HORLOGE_HUD_Y: int = 38
+RAYON_HORLOGE_MINIMALISTE: int = 20
+POSITION_JOUR_HUD_X: int = 982
+POSITION_JOUR_HUD_Y: int = 38
+POSITION_SCORE_HUD_X: int = 895
+POSITION_SCORE_HUD_Y: int = 38
+CENTRE_EPINGLE_SCORE_X: int = 842
+CENTRE_EPINGLE_SCORE_Y: int = 34
+RAYON_TETE_EPINGLE: int = 7
+RAYON_TROU_EPINGLE: int = 3
+HAUTEUR_POINTE_EPINGLE: int = 11
+DEMI_LARGEUR_POINTE_EPINGLE: int = 5
+TAILLE_POLICE_SCORE_HUD: int = 32
+TAILLE_POLICE_JOUR_HUD: int = 22
+
+# Dock d'outils minimaliste en bas au centre
+CENTRE_DOCK_X: int = LARGEUR_FENETRE // DIVISEUR_MOITIE
+CENTRE_DOCK_Y: int = 1030
+DEMI_TAILLE_LOSANGE_ROUTES: int = 26
+COULEUR_LOSANGE_ROUTES: tuple[int, int, int] = (42, 46, 54)
+COULEUR_TEXTE_LOSANGE_ROUTES: tuple[int, int, int] = (248, 246, 240)
+RAYON_BOUTON_DOCK: int = 22
+ESPACEMENT_BOUTONS_DOCK_X: int = 62
+INDICE_DOCK_ROND_POINT: int = -2
+INDICE_DOCK_FEU: int = -1
+INDICE_DOCK_PONT_TUNNEL: int = 1
+INDICE_DOCK_AUTOROUTE: int = 2
+INDICE_DOCK_EDITION: int = 3
+RAYON_PASTILLE_STOCK_DOCK: int = 9
+DECALAGE_PASTILLE_STOCK_X: int = 15
+DECALAGE_PASTILLE_STOCK_Y: int = -15
+COULEUR_PASTILLE_STOCK: tuple[int, int, int] = (48, 52, 60)
+COULEUR_TEXTE_PASTILLE_STOCK: tuple[int, int, int] = (250, 248, 242)
+TAILLE_POLICE_PASTILLE_DOCK: int = 16
+LARGEUR_ICONE_CORBEILLE: int = 12
+HAUTEUR_ICONE_CORBEILLE: int = 14
+DECALAGE_COUVERCLE_CORBEILLE_Y: int = 3

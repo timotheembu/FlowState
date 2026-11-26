@@ -55,3 +55,5 @@ mini-motorways-clone/
 - [x] **Étape 15 :** Infrastructures et bonus spéciaux : Ponts (sur `CASE_EAU`), Tunnels (sous `CASE_MONTAGNE`), Feux de circulation, Ronds-points et Autoroutes avec inventaire dédié.
 - [x] **Étape 16 :** Système temporel (horloge visuelle + défilement des jours) et choix hebdomadaire chaque lundi (pause et sélection entre deux lots de routes/bonus).
 - [x] **Étape 17 :** Mode Édition (touche dédiée pour activer/désactiver le mode construction ; tracé actif uniquement en mode édition et grille masquée en mode jeu normal).
+- [x] **Étape 18 :** Refonte esthétique *Mini Motorways* : palettes pastel par carte (papier crème, corail/terre cuite, bleu lagon), ombres portées douces, usines avec parking et pastilles de demande, maisons stylisées, rivières/montagnes adoucies et HUD minimaliste (dock circulaire en bas, épingle de score et horloge en haut à droite).
+- [ ] **Étape 19 :** Menu principal en carrousel de cartes (ex: *Zurich*, *Manila*, *Rio de Janeiro*, *Orléans*) avec aperçu circulaire du terrain, sélecteur de variante de couleur (clair/sombre), sauvegarde du meilleur score (`Best`) et bouton retour au menu en jeu.
