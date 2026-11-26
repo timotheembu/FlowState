@@ -1,8 +1,11 @@
 """Vue chargée du rendu graphique Pygame avec caméra à zoom progressif."""
 
+import math
 import pygame
 
 from src.config import (
+    ANGLE_DEPART_HORLOGE_RAD,
+    ANGLE_TOUR_COMPLET_RAD,
     BORDURE_AUTOROUTE,
     BORDURE_CHAUSSEE,
     CARTES_DISPONIBLES,
@@ -16,6 +19,7 @@ from src.config import (
     COULEUR_BORDURE_ROUTE,
     COULEUR_BOUTON_CARTE,
     COULEUR_BOUTON_CARTE_SURVOL,
+    COULEUR_CADRAN_HORLOGE,
     COULEUR_CENTRE_ROND_POINT,
     COULEUR_CONTOUR_BATIMENT,
     COULEUR_EAU,
@@ -32,53 +36,80 @@ from src.config import (
     COULEUR_PONT,
     COULEUR_ROND_POINT,
     COULEUR_ROUTE,
+    COULEUR_SECTEUR_HORLOGE,
     COULEUR_SOMMET_MONTAGNE,
     COULEUR_SOUS_TEXTE_DEFAITE,
     COULEUR_TEXTE_DEFAITE,
     COULEUR_TEXTE_INTERFACE,
     COULEUR_TUNNEL,
+    DECALAGE_AIDE_CARTE_OFFRE_Y,
+    DECALAGE_BONUS_CARTE_OFFRE_Y,
+    DECALAGE_CARTES_MODALE_HEBDO_Y,
     DECALAGE_CENTRE_CASE,
+    DECALAGE_CENTRE_HORLOGE_X,
+    DECALAGE_ROUTES_CARTE_OFFRE_Y,
     DECALAGE_SOUS_TITRE_DEFAITE_Y,
+    DECALAGE_SOUS_TITRE_MODALE_HEBDO_Y,
+    DECALAGE_TEXTE_HORLOGE_X,
+    DECALAGE_TITRE_CARTE_OFFRE_Y,
     DECALAGE_TITRE_DEFAITE_Y,
+    DECALAGE_TITRE_MODALE_HEBDO_Y,
     DECALAGE_VOIE_DROITE_PIXELS,
     DECALAGE_VOYANT_FEU,
     DIMENSION_PIXEL_MINIMALE,
     DIVISEUR_MOITIE,
+    EPAISSEUR_AIGUILLE_HORLOGE,
     EPAISSEUR_CONTOUR_INTERFACE,
     EPAISSEUR_CONTOUR_USINE,
     EPAISSEUR_LIGNE_GRILLE,
     ESPACEMENT_BOUTONS_CARTE_Y,
     ESPACEMENT_BOUTONS_OUTIL_X,
+    ESPACEMENT_CARTES_OFFRE_X,
     ESPACEMENT_INDICATEUR_DEMANDE,
     ETAT_FEU_HORIZONTAL_VERT,
     FACTEUR_DOUBLE_MARGE,
     FACTEUR_ECHELLE_UNITE,
     HAUTEUR_ARCHE_AUTOROUTE,
+    HAUTEUR_BANDEAU_HORLOGE,
     HAUTEUR_BANDEAU_ROUTES,
     HAUTEUR_BANDEAU_SCORE,
     HAUTEUR_BOUTON_CARTE,
     HAUTEUR_BOUTON_OUTIL,
+    HAUTEUR_CARTE_OFFRE_HEBDO,
     HAUTEUR_FENETRE,
     HAUTEUR_PANNEAU_DEFAITE,
+    HAUTEUR_PANNEAU_HEBDOMADAIRE,
     INCREMENT_BORNE_GRILLE,
+    INDICE_JOUR_LUNDI,
+    JOURS_SEMAINE,
     LARGEUR_AUTOROUTE,
+    LARGEUR_BANDEAU_HORLOGE,
     LARGEUR_BANDEAU_ROUTES,
     LARGEUR_BANDEAU_SCORE,
     LARGEUR_BOUTON_CARTE,
     LARGEUR_BOUTON_OUTIL,
+    LARGEUR_CARTE_OFFRE_HEBDO,
     LARGEUR_CHAUSSEE,
     LARGEUR_FENETRE,
     LARGEUR_PANNEAU_DEFAITE,
+    LARGEUR_PANNEAU_HEBDOMADAIRE,
+    LONGUEUR_MINIMALE_ITINERAIRE,
     MARGE_INTERIEURE_DEMANDE,
     MARGE_MAISON,
     MARGE_SOMMET_MONTAGNE,
     MARGE_USINE,
     NB_COLONNES_GRILLE_DEMANDES,
+    NB_OPTIONS_HEBDOMADAIRES,
     NB_SEGMENTS_ARCHE_AUTOROUTE,
+    NB_SEGMENTS_SECTEUR_HORLOGE,
+    NUMERO_SEMAINE_INITIALE,
     OUTIL_AUTOROUTE,
     OUTIL_FEU,
     OUTIL_ROND_POINT,
     OUTIL_ROUTE,
+    PAS_INCREMENT_COMPTEUR,
+    POSITION_BANDEAU_HORLOGE_X,
+    POSITION_BANDEAU_HORLOGE_Y,
     POSITION_BANDEAU_ROUTES_X,
     POSITION_BANDEAU_ROUTES_Y,
     POSITION_BANDEAU_SCORE_X,
@@ -96,6 +127,7 @@ from src.config import (
     RAYON_CONTOUR_VOITURE,
     RAYON_ENTREE_TUNNEL,
     RAYON_EXTERIEUR_ROND_POINT,
+    RAYON_HORLOGE_HUD,
     RAYON_INDICATEUR_DEMANDE,
     RAYON_INTERIEUR_ROND_POINT,
     RAYON_INTERIEUR_TUNNEL,
@@ -1318,16 +1350,16 @@ class Renderer:
         libelles_outils: list[tuple[int, str]] = [
             (
                 OUTIL_ROUTE,
-                f"[1] Voie P:{grille.stock_ponts} T:{grille.stock_tunnels}",
+                f"[1] P:{grille.stock_ponts} T:{grille.stock_tunnels}",
             ),
-            (OUTIL_FEU, f"[2] Feux : {grille.stock_feux}"),
+            (OUTIL_FEU, f"[2] Feux:{grille.stock_feux}"),
             (
                 OUTIL_ROND_POINT,
-                f"[3] Ronds-pts : {grille.stock_ronds_points}",
+                f"[3] R-Pts:{grille.stock_ronds_points}",
             ),
             (
                 OUTIL_AUTOROUTE,
-                f"[4] Autoroutes : {grille.stock_autoroutes}",
+                f"[4] Auto:{grille.stock_autoroutes}",
             ),
         ]
 
@@ -1372,6 +1404,335 @@ class Renderer:
             )
             self.ecran.blit(surface_texte, rectangle_texte)
 
+    def dessiner_horloge_hud(
+        self,
+        nom_jour: str,
+        numero_semaine: int,
+        progression_jour: float,
+    ) -> None:
+        """Dessine l'horloge circulaire, le jour et la semaine en haut à droite.
+
+        Args:
+            nom_jour: Nom du jour actuel (ex: "Lundi").
+            numero_semaine: Numéro de la semaine en cours.
+            progression_jour: Fraction écoulée de la journée (0.0 à 1.0).
+        """
+        rectangle_bandeau: pygame.Rect = pygame.Rect(
+            POSITION_BANDEAU_HORLOGE_X,
+            POSITION_BANDEAU_HORLOGE_Y,
+            LARGEUR_BANDEAU_HORLOGE,
+            HAUTEUR_BANDEAU_HORLOGE,
+        )
+        pygame.draw.rect(
+            self.ecran,
+            COULEUR_FOND_BANDEAU_SCORE,
+            rectangle_bandeau,
+            border_radius=RAYON_BORDURE_INTERFACE,
+        )
+        pygame.draw.rect(
+            self.ecran,
+            COULEUR_CONTOUR_BATIMENT,
+            rectangle_bandeau,
+            width=EPAISSEUR_CONTOUR_INTERFACE,
+            border_radius=RAYON_BORDURE_INTERFACE,
+        )
+
+        centre_horloge_x: int = (
+            POSITION_BANDEAU_HORLOGE_X + DECALAGE_CENTRE_HORLOGE_X
+        )
+        centre_horloge_y: int = rectangle_bandeau.centery
+        centre_horloge: tuple[int, int] = (
+            centre_horloge_x,
+            centre_horloge_y,
+        )
+
+        pygame.draw.circle(
+            self.ecran,
+            COULEUR_CADRAN_HORLOGE,
+            centre_horloge,
+            RAYON_HORLOGE_HUD,
+        )
+
+        points_secteur: list[tuple[int, int]] = [centre_horloge]
+        nb_etapes_arc: int = int(
+            round(float(NB_SEGMENTS_SECTEUR_HORLOGE) * progression_jour)
+        )
+        if nb_etapes_arc >= PAS_INCREMENT_COMPTEUR:
+            for indice_arc in range(nb_etapes_arc + PAS_INCREMENT_COMPTEUR):
+                fraction_arc: float = float(indice_arc) / float(
+                    NB_SEGMENTS_SECTEUR_HORLOGE
+                )
+                angle_courant: float = (
+                    ANGLE_DEPART_HORLOGE_RAD
+                    + fraction_arc * ANGLE_TOUR_COMPLET_RAD
+                )
+                point_x: int = int(
+                    round(
+                        float(centre_horloge_x)
+                        + math.cos(angle_courant) * float(RAYON_HORLOGE_HUD)
+                    )
+                )
+                point_y: int = int(
+                    round(
+                        float(centre_horloge_y)
+                        + math.sin(angle_courant) * float(RAYON_HORLOGE_HUD)
+                    )
+                )
+                points_secteur.append((point_x, point_y))
+
+            if len(points_secteur) > LONGUEUR_MINIMALE_ITINERAIRE:
+                pygame.draw.polygon(
+                    self.ecran,
+                    COULEUR_SECTEUR_HORLOGE,
+                    points_secteur,
+                )
+            else:
+                pass
+        else:
+            pass
+
+        angle_aiguille: float = (
+            ANGLE_DEPART_HORLOGE_RAD
+            + progression_jour * ANGLE_TOUR_COMPLET_RAD
+        )
+        extremite_x: int = int(
+            round(
+                float(centre_horloge_x)
+                + math.cos(angle_aiguille)
+                * float(RAYON_HORLOGE_HUD - EPAISSEUR_AIGUILLE_HORLOGE)
+            )
+        )
+        extremite_y: int = int(
+            round(
+                float(centre_horloge_y)
+                + math.sin(angle_aiguille)
+                * float(RAYON_HORLOGE_HUD - EPAISSEUR_AIGUILLE_HORLOGE)
+            )
+        )
+        pygame.draw.line(
+            self.ecran,
+            COULEUR_CONTOUR_BATIMENT,
+            centre_horloge,
+            (extremite_x, extremite_y),
+            EPAISSEUR_AIGUILLE_HORLOGE,
+        )
+        pygame.draw.circle(
+            self.ecran,
+            COULEUR_CONTOUR_BATIMENT,
+            centre_horloge,
+            RAYON_HORLOGE_HUD,
+            width=EPAISSEUR_AIGUILLE_HORLOGE,
+        )
+
+        surface_jour: pygame.Surface = self.police_outil.render(
+            f"{nom_jour} (S.{numero_semaine})",
+            True,
+            COULEUR_TEXTE_INTERFACE,
+        )
+        rectangle_jour: pygame.Rect = surface_jour.get_rect(
+            center=(
+                rectangle_bandeau.centerx + DECALAGE_TEXTE_HORLOGE_X,
+                rectangle_bandeau.centery,
+            )
+        )
+        self.ecran.blit(surface_jour, rectangle_jour)
+
+    def obtenir_rectangles_cartes_hebdomadaires(
+        self,
+    ) -> list[pygame.Rect]:
+        """Retourne les rectangles cliquables des 2 offres hebdomadaires.
+
+        Returns:
+            Liste des 2 pygame.Rect (Option 1 à gauche, Option 2 à droite).
+        """
+        centre_ecran_x: int = LARGEUR_FENETRE // DIVISEUR_MOITIE
+        centre_ecran_y: int = HAUTEUR_FENETRE // DIVISEUR_MOITIE
+        panneau_y: int = (
+            centre_ecran_y - HAUTEUR_PANNEAU_HEBDOMADAIRE // DIVISEUR_MOITIE
+        )
+        largeur_totale_cartes: int = (
+            FACTEUR_DOUBLE_MARGE * LARGEUR_CARTE_OFFRE_HEBDO
+            + ESPACEMENT_CARTES_OFFRE_X
+        )
+        depart_cartes_x: int = (
+            centre_ecran_x - largeur_totale_cartes // DIVISEUR_MOITIE
+        )
+        cartes_y: int = panneau_y + DECALAGE_CARTES_MODALE_HEBDO_Y
+
+        rectangles: list[pygame.Rect] = []
+        for indice_carte in range(NB_OPTIONS_HEBDOMADAIRES):
+            carte_x: int = depart_cartes_x + indice_carte * (
+                LARGEUR_CARTE_OFFRE_HEBDO + ESPACEMENT_CARTES_OFFRE_X
+            )
+            rectangle_carte: pygame.Rect = pygame.Rect(
+                carte_x,
+                cartes_y,
+                LARGEUR_CARTE_OFFRE_HEBDO,
+                HAUTEUR_CARTE_OFFRE_HEBDO,
+            )
+            rectangles.append(rectangle_carte)
+        return rectangles
+
+    def dessiner_modale_choix_hebdomadaire(
+        self,
+        numero_semaine: int,
+        offres: list[dict[str, int | str]],
+    ) -> None:
+        """Affiche la fenêtre modale de pause et de récompenses du lundi.
+
+        Args:
+            numero_semaine: Numéro de la nouvelle semaine.
+            offres: Liste des 2 dictionnaires d'offres hebdomadaires.
+        """
+        centre_ecran_x: int = LARGEUR_FENETRE // DIVISEUR_MOITIE
+        centre_ecran_y: int = HAUTEUR_FENETRE // DIVISEUR_MOITIE
+        panneau_x: int = (
+            centre_ecran_x - LARGEUR_PANNEAU_HEBDOMADAIRE // DIVISEUR_MOITIE
+        )
+        panneau_y: int = (
+            centre_ecran_y - HAUTEUR_PANNEAU_HEBDOMADAIRE // DIVISEUR_MOITIE
+        )
+        rectangle_panneau: pygame.Rect = pygame.Rect(
+            panneau_x,
+            panneau_y,
+            LARGEUR_PANNEAU_HEBDOMADAIRE,
+            HAUTEUR_PANNEAU_HEBDOMADAIRE,
+        )
+        pygame.draw.rect(
+            self.ecran,
+            COULEUR_FOND_PANNEAU_DEFAITE,
+            rectangle_panneau,
+            border_radius=RAYON_BORDURE_INTERFACE,
+        )
+        pygame.draw.rect(
+            self.ecran,
+            COULEUR_SOUS_TEXTE_DEFAITE,
+            rectangle_panneau,
+            width=EPAISSEUR_CONTOUR_INTERFACE,
+            border_radius=RAYON_BORDURE_INTERFACE,
+        )
+
+        surface_titre: pygame.Surface = (
+            self.police_sous_titre_defaite.render(
+                f"Lundi - Semaine {numero_semaine} : Dotation Hebdomadaire",
+                True,
+                COULEUR_SOUS_TEXTE_DEFAITE,
+            )
+        )
+        rectangle_titre: pygame.Rect = surface_titre.get_rect(
+            center=(
+                centre_ecran_x,
+                panneau_y + DECALAGE_TITRE_MODALE_HEBDO_Y,
+            )
+        )
+        self.ecran.blit(surface_titre, rectangle_titre)
+
+        surface_instruction: pygame.Surface = self.police_score.render(
+            "Cliquez sur l'une des deux offres pour continuer la partie :",
+            True,
+            COULEUR_SOUS_TEXTE_DEFAITE,
+        )
+        rectangle_instruction: pygame.Rect = surface_instruction.get_rect(
+            center=(
+                centre_ecran_x,
+                panneau_y + DECALAGE_SOUS_TITRE_MODALE_HEBDO_Y,
+            )
+        )
+        self.ecran.blit(surface_instruction, rectangle_instruction)
+
+        position_souris: tuple[int, int] = pygame.mouse.get_pos()
+        rectangles_cartes: list[pygame.Rect] = (
+            self.obtenir_rectangles_cartes_hebdomadaires()
+        )
+
+        for indice_offre, rectangle_carte in enumerate(rectangles_cartes):
+            if indice_offre < len(offres):
+                offre: dict[str, int | str] = offres[indice_offre]
+                if rectangle_carte.collidepoint(position_souris):
+                    couleur_carte: tuple[int, int, int] = COULEUR_OUTIL_ACTIF
+                else:
+                    couleur_carte = COULEUR_BOUTON_CARTE
+
+                pygame.draw.rect(
+                    self.ecran,
+                    couleur_carte,
+                    rectangle_carte,
+                    border_radius=RAYON_BORDURE_INTERFACE,
+                )
+                pygame.draw.rect(
+                    self.ecran,
+                    COULEUR_CONTOUR_BATIMENT,
+                    rectangle_carte,
+                    width=EPAISSEUR_CONTOUR_INTERFACE,
+                    border_radius=RAYON_BORDURE_INTERFACE,
+                )
+
+                surface_titre_offre: pygame.Surface = (
+                    self.police_score.render(
+                        str(offre["titre"]),
+                        True,
+                        COULEUR_TEXTE_INTERFACE,
+                    )
+                )
+                rect_titre_offre: pygame.Rect = (
+                    surface_titre_offre.get_rect(
+                        center=(
+                            rectangle_carte.centerx,
+                            rectangle_carte.top
+                            + DECALAGE_TITRE_CARTE_OFFRE_Y,
+                        )
+                    )
+                )
+                self.ecran.blit(surface_titre_offre, rect_titre_offre)
+
+                surface_routes: pygame.Surface = (
+                    self.police_sous_titre_defaite.render(
+                        str(offre["texte_routes"]),
+                        True,
+                        COULEUR_TEXTE_INTERFACE,
+                    )
+                )
+                rect_routes: pygame.Rect = surface_routes.get_rect(
+                    center=(
+                        rectangle_carte.centerx,
+                        rectangle_carte.top + DECALAGE_ROUTES_CARTE_OFFRE_Y,
+                    )
+                )
+                self.ecran.blit(surface_routes, rect_routes)
+
+                surface_bonus: pygame.Surface = (
+                    self.police_sous_titre_defaite.render(
+                        str(offre["texte_bonus"]),
+                        True,
+                        COULEUR_SECTEUR_HORLOGE,
+                    )
+                )
+                rect_bonus: pygame.Rect = surface_bonus.get_rect(
+                    center=(
+                        rectangle_carte.centerx,
+                        rectangle_carte.top + DECALAGE_BONUS_CARTE_OFFRE_Y,
+                    )
+                )
+                self.ecran.blit(surface_bonus, rect_bonus)
+
+                numero_touche: int = (
+                    indice_offre + PAS_INCREMENT_COMPTEUR
+                )
+                surface_aide: pygame.Surface = self.police_outil.render(
+                    f"Clic gauche ou Touche [{numero_touche}]",
+                    True,
+                    COULEUR_TEXTE_INTERFACE,
+                )
+                rect_aide: pygame.Rect = surface_aide.get_rect(
+                    center=(
+                        rectangle_carte.centerx,
+                        rectangle_carte.top + DECALAGE_AIDE_CARTE_OFFRE_Y,
+                    )
+                )
+                self.ecran.blit(surface_aide, rect_aide)
+            else:
+                pass
+
     def afficher(
         self,
         grille: Grid,
@@ -1380,6 +1741,11 @@ class Renderer:
         partie_perdue: bool = False,
         parametres_camera: tuple[float, float, float, float] | None = None,
         outil_actif: int = OUTIL_ROUTE,
+        nom_jour: str = JOURS_SEMAINE[INDICE_JOUR_LUNDI],
+        numero_semaine: int = NUMERO_SEMAINE_INITIALE,
+        progression_jour: float = COORDONNEE_CAMERA_ORIGINE_FLOAT,
+        choix_hebdomadaire_actif: bool = False,
+        offres_hebdomadaires: list[dict[str, int | str]] | None = None,
     ) -> None:
         """Effectue le rendu complet d'une frame avec caméra et HUD fixe.
 
@@ -1460,6 +1826,18 @@ class Renderer:
         self.dessiner_bandeau_score(score)
         self.dessiner_bandeau_routes(grille.stock_routes)
         self.dessiner_barre_outils_bonus(grille, outil_actif)
+        self.dessiner_horloge_hud(
+            nom_jour,
+            numero_semaine,
+            progression_jour,
+        )
+        if choix_hebdomadaire_actif and offres_hebdomadaires is not None:
+            self.dessiner_modale_choix_hebdomadaire(
+                numero_semaine,
+                offres_hebdomadaires,
+            )
+        else:
+            pass
         if partie_perdue:
             self.dessiner_ecran_defaite(score)
         else:

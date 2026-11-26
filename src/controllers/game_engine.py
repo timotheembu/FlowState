@@ -4,6 +4,12 @@ import math
 import random
 
 from src.config import (
+    BONUS_AUTOROUTE,
+    BONUS_FEU,
+    BONUS_PONT,
+    BONUS_ROND_POINT,
+    BONUS_STANDARDS_DISPONIBLES,
+    BONUS_TUNNEL,
     COMPTEUR_INITIAL_FRAMES,
     COMPTEUR_INITIAL_LIVRAISONS,
     DELAI_APPARITION_INITIALE_PAIRE,
@@ -11,24 +17,36 @@ from src.config import (
     DISTANCE_MIN_ENTRE_BATIMENTS,
     DISTANCE_MIN_SECURITE_VOITURE,
     DIVISEUR_MOITIE,
+    DUREE_JOUR_FRAMES,
     ETAT_VOITURE_A_L_USINE,
     ETAT_VOITURE_ALLER_USINE,
     ETAT_VOITURE_RETOUR_MAISON,
     FACTEUR_ACCELERATION_APPARITION,
+    INDICE_JOUR_LUNDI,
     INDICE_MINIMUM_GRILLE,
     INTERVALLE_INITIAL_APPARITION_BATIMENT,
     INTERVALLE_MINIMUM_APPARITION_BATIMENT,
+    JOURS_SEMAINE,
     LARGEUR_FENETRE,
+    LIBELLES_BONUS_HEBDOMADAIRES,
     LONGUEUR_LISTE_VIDE,
     LONGUEUR_MINIMALE_ITINERAIRE,
     MARGE_BORDURE_APPARITION,
     MARGE_DECLENCHEMENT_DEZOOM,
     MARGE_INTERIEURE_SPAWN_CAMERA,
+    NUMERO_SEMAINE_INITIALE,
     PALETTE_COULEURS_BATIMENTS,
     PAS_EXPANSION_DISTANCE_SPAWN,
     PAS_EXPANSION_ZONE_CAMERA,
     PAS_INCREMENT_COMPTEUR,
     PROBABILITE_MAISON_SEULE,
+    PROBABILITE_OFFRE_AUTOROUTE,
+    QUANTITE_AUTOROUTE_LOT_SPECIAL,
+    QUANTITE_BONUS_DOUBLE_LOT_SPECIAL,
+    QUANTITE_BONUS_LOT_STANDARD,
+    ROUTES_LOT_SPECIAL,
+    ROUTES_LOT_STANDARD,
+    STOCK_ROUTES_EPUISE,
     TAILLE_CASE,
     VITESSE_INTERPOLATION_CAMERA,
     ZONE_VISIBLE_INITIALE,
@@ -40,10 +58,10 @@ from src.models.pathfinding import trouver_chemin_a_etoile
 
 
 class GameEngine:
-    """Orchestre l'apparition progressive, la caméra, le trafic et le score."""
+    """Orchestre l'apparition progressive, la caméra, le temps et le trafic."""
 
     def __init__(self, grille: Grid) -> None:
-        """Initialise le moteur de simulation avec la grille et la caméra.
+        """Initialise le moteur de simulation avec la grille et l'horloge.
 
         Args:
             grille: Instance du modèle Grid contenant bâtiments et routes.
@@ -62,6 +80,163 @@ class GameEngine:
         self.distance_max_spawn_actuelle: int = (
             DISTANCE_MAX_INITIALE_BATIMENTS
         )
+        self.compteur_frames_jour: int = COMPTEUR_INITIAL_FRAMES
+        self.indice_jour_courant: int = INDICE_JOUR_LUNDI
+        self.numero_semaine: int = NUMERO_SEMAINE_INITIALE
+        self.choix_hebdomadaire_actif: bool = False
+        self.offres_hebdomadaires: list[dict[str, int | str]] = []
+
+    def obtenir_nom_jour_courant(self) -> str:
+        """Retourne le nom en français du jour de la semaine en cours.
+
+        Returns:
+            Chaîne parmi JOURS_SEMAINE (ex: "Lundi").
+        """
+        return JOURS_SEMAINE[self.indice_jour_courant]
+
+    def obtenir_progression_jour(self) -> float:
+        """Calcule la fraction écoulée (entre 0.0 et 1.0) de la journée.
+
+        Returns:
+            Flottant représentant l'avancement de l'horloge journalière.
+        """
+        return float(self.compteur_frames_jour) / float(DUREE_JOUR_FRAMES)
+
+    def construire_lot_recompense(
+        self,
+        titre: str,
+        nb_routes: int,
+        type_bonus: str,
+        quantite_bonus: int,
+    ) -> dict[str, int | str]:
+        """Crée un dictionnaire standardisé décrivant une offre du lundi.
+
+        Args:
+            titre: Titre de la carte d'offre (ex: "Dotation Standard").
+            nb_routes: Nombre de cases de route incluses.
+            type_bonus: Clé du bonus offert (ex: BONUS_PONT, BONUS_AUTOROUTE).
+            quantite_bonus: Quantité de ce bonus.
+
+        Returns:
+            Dictionnaire contenant les quantités à créditer et les textes UI.
+        """
+        lot: dict[str, int | str] = {
+            "titre": titre,
+            "routes": nb_routes,
+            BONUS_PONT: STOCK_ROUTES_EPUISE,
+            BONUS_TUNNEL: STOCK_ROUTES_EPUISE,
+            BONUS_FEU: STOCK_ROUTES_EPUISE,
+            BONUS_ROND_POINT: STOCK_ROUTES_EPUISE,
+            BONUS_AUTOROUTE: STOCK_ROUTES_EPUISE,
+        }
+        lot[type_bonus] = quantite_bonus
+        nom_bonus: str = LIBELLES_BONUS_HEBDOMADAIRES.get(
+            type_bonus,
+            "Bonus",
+        )
+        if quantite_bonus > QUANTITE_BONUS_LOT_STANDARD:
+            suffixe_pluriel: str = "s"
+        else:
+            suffixe_pluriel = ""
+        lot["texte_routes"] = f"+{nb_routes} Routes"
+        lot["texte_bonus"] = (
+            f"+{quantite_bonus} {nom_bonus}{suffixe_pluriel}"
+        )
+        return lot
+
+    def generer_offres_hebdomadaires(self) -> None:
+        """Génère deux propositions distinctes de récompenses pour le lundi."""
+        bonus_option_1: str = random.choice(BONUS_STANDARDS_DISPONIBLES)
+        offre_1: dict[str, int | str] = self.construire_lot_recompense(
+            "Option 1 - Reseau",
+            ROUTES_LOT_STANDARD,
+            bonus_option_1,
+            QUANTITE_BONUS_LOT_STANDARD,
+        )
+
+        tirage_special: float = random.random()
+        if tirage_special < PROBABILITE_OFFRE_AUTOROUTE:
+            offre_2: dict[str, int | str] = self.construire_lot_recompense(
+                "Option 2 - Express",
+                ROUTES_LOT_SPECIAL,
+                BONUS_AUTOROUTE,
+                QUANTITE_AUTOROUTE_LOT_SPECIAL,
+            )
+        else:
+            autres_bonus: list[str] = []
+            for candidat in BONUS_STANDARDS_DISPONIBLES:
+                if candidat != bonus_option_1:
+                    autres_bonus.append(candidat)
+                else:
+                    pass
+            bonus_option_2: str = random.choice(autres_bonus)
+            offre_2 = self.construire_lot_recompense(
+                "Option 2 - Equipement",
+                ROUTES_LOT_SPECIAL,
+                bonus_option_2,
+                QUANTITE_BONUS_DOUBLE_LOT_SPECIAL,
+            )
+
+        self.offres_hebdomadaires = [offre_1, offre_2]
+
+    def appliquer_choix_hebdomadaire(self, indice_option: int) -> bool:
+        """Crédite le lot choisi par le joueur et reprend la simulation.
+
+        Args:
+            indice_option: Indice (0 ou 1) de l'option sélectionnée.
+
+        Returns:
+            True si le choix a été appliqué avec succès, False sinon.
+        """
+        if not self.choix_hebdomadaire_actif:
+            return False
+        else:
+            pass
+
+        indice_valide: bool = (
+            INDICE_MINIMUM_GRILLE
+            <= indice_option
+            < len(self.offres_hebdomadaires)
+        )
+        if not indice_valide:
+            return False
+        else:
+            offre_choisie: dict[str, int | str] = self.offres_hebdomadaires[
+                indice_option
+            ]
+            self.grille.crediter_recompense_hebdomadaire(
+                nb_routes=int(offre_choisie["routes"]),
+                nb_ponts=int(offre_choisie[BONUS_PONT]),
+                nb_tunnels=int(offre_choisie[BONUS_TUNNEL]),
+                nb_feux=int(offre_choisie[BONUS_FEU]),
+                nb_ronds_points=int(offre_choisie[BONUS_ROND_POINT]),
+                nb_autoroutes=int(offre_choisie[BONUS_AUTOROUTE]),
+            )
+            self.offres_hebdomadaires = []
+            self.choix_hebdomadaire_actif = False
+            return True
+
+    def mettre_a_jour_horloge(self) -> None:
+        """Fait défiler les jours et déclenche la pause du lundi."""
+        self.compteur_frames_jour = (
+            self.compteur_frames_jour + PAS_INCREMENT_COMPTEUR
+        )
+        if self.compteur_frames_jour >= DUREE_JOUR_FRAMES:
+            self.compteur_frames_jour = COMPTEUR_INITIAL_FRAMES
+            self.indice_jour_courant = (
+                self.indice_jour_courant + PAS_INCREMENT_COMPTEUR
+            ) % len(JOURS_SEMAINE)
+
+            if self.indice_jour_courant == INDICE_JOUR_LUNDI:
+                self.numero_semaine = (
+                    self.numero_semaine + PAS_INCREMENT_COMPTEUR
+                )
+                self.choix_hebdomadaire_actif = True
+                self.generer_offres_hebdomadaires()
+            else:
+                pass
+        else:
+            pass
 
     def obtenir_bornes_grille_camera(
         self,
@@ -731,8 +906,14 @@ class GameEngine:
         self.voitures = voitures_en_route
 
     def mettre_a_jour(self) -> None:
-        """Exécute un cycle complet de simulation si la partie est en cours."""
-        if self.partie_perdue:
+        """Exécute un cycle complet de simulation si la partie est active."""
+        if self.partie_perdue or self.choix_hebdomadaire_actif:
+            return
+        else:
+            pass
+
+        self.mettre_a_jour_horloge()
+        if self.choix_hebdomadaire_actif:
             return
         else:
             pass

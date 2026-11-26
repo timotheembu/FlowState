@@ -40,10 +40,12 @@ from src.config import (
     RAYON_ZONE_CENTRALE_DEGAGEE,
     STOCK_AUTOROUTES_INITIAL,
     STOCK_FEUX_INITIAL,
+    STOCK_PONTS_DEPART_RIVIERE,
     STOCK_PONTS_INITIAL,
     STOCK_RONDS_POINTS_INITIAL,
     STOCK_ROUTES_EPUISE,
     STOCK_ROUTES_INITIAL,
+    STOCK_TUNNELS_DEPART_MONTAGNES,
     STOCK_TUNNELS_INITIAL,
     UNITE_STOCK_ROUTE,
 )
@@ -450,17 +452,73 @@ class Grid:
     ) -> None:
         """Réinitialise la grille et génère le relief de la carte choisie.
 
+        Attribue également un premier bonus de franchissement adapté au
+        relief (1 pont sur Rivière, 1 tunnel sur Montagnes).
+
         Args:
             nom_carte: Nom de la carte ("Plaine", "Rivière", "Montagnes").
         """
         self.reinitialiser()
         if nom_carte == CARTE_RIVIERE:
             self.generer_riviere_sinueuse()
+            self.stock_ponts = STOCK_PONTS_DEPART_RIVIERE
         else:
             if nom_carte == CARTE_MONTAGNES:
                 self.generer_massifs_montagneux()
+                self.stock_tunnels = STOCK_TUNNELS_DEPART_MONTAGNES
             else:
                 pass
+
+    def crediter_recompense_hebdomadaire(
+        self,
+        nb_routes: int = STOCK_ROUTES_EPUISE,
+        nb_ponts: int = STOCK_ROUTES_EPUISE,
+        nb_tunnels: int = STOCK_ROUTES_EPUISE,
+        nb_feux: int = STOCK_ROUTES_EPUISE,
+        nb_ronds_points: int = STOCK_ROUTES_EPUISE,
+        nb_autoroutes: int = STOCK_ROUTES_EPUISE,
+    ) -> None:
+        """Crédite l'inventaire du joueur avec le lot hebdomadaire choisi.
+
+        Args:
+            nb_routes: Nombre de cases de route à ajouter.
+            nb_ponts: Nombre de ponts à ajouter.
+            nb_tunnels: Nombre de tunnels à ajouter.
+            nb_feux: Nombre de feux de circulation à ajouter.
+            nb_ronds_points: Nombre de ronds-points à ajouter.
+            nb_autoroutes: Nombre d'autoroutes à ajouter.
+        """
+        if nb_routes > STOCK_ROUTES_EPUISE:
+            self.stock_routes = self.stock_routes + nb_routes
+        else:
+            pass
+
+        if nb_ponts > STOCK_ROUTES_EPUISE:
+            self.stock_ponts = self.stock_ponts + nb_ponts
+        else:
+            pass
+
+        if nb_tunnels > STOCK_ROUTES_EPUISE:
+            self.stock_tunnels = self.stock_tunnels + nb_tunnels
+        else:
+            pass
+
+        if nb_feux > STOCK_ROUTES_EPUISE:
+            self.stock_feux = self.stock_feux + nb_feux
+        else:
+            pass
+
+        if nb_ronds_points > STOCK_ROUTES_EPUISE:
+            self.stock_ronds_points = (
+                self.stock_ronds_points + nb_ronds_points
+            )
+        else:
+            pass
+
+        if nb_autoroutes > STOCK_ROUTES_EPUISE:
+            self.stock_autoroutes = self.stock_autoroutes + nb_autoroutes
+        else:
+            pass
 
     def obtenir_maison_a_coordonnee(
         self,

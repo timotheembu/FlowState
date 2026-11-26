@@ -93,6 +93,7 @@ def executer_jeu() -> None:
                         evenement,
                         grille,
                         parametres_camera,
+                        moteur_jeu,
                     )
                 else:
                     pass
@@ -108,6 +109,11 @@ def executer_jeu() -> None:
             moteur_jeu.partie_perdue,
             parametres_camera_rendu,
             gestionnaire_entrees.outil_actif,
+            moteur_jeu.obtenir_nom_jour_courant(),
+            moteur_jeu.numero_semaine,
+            moteur_jeu.obtenir_progression_jour(),
+            moteur_jeu.choix_hebdomadaire_actif,
+            moteur_jeu.offres_hebdomadaires,
         )
         horloge.tick(FPS)
 

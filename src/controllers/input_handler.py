@@ -3,21 +3,35 @@
 import math
 import pygame
 
+from typing import TYPE_CHECKING
+
 from src.config import (
     BOUTON_SOURIS_DROIT,
     BOUTON_SOURIS_GAUCHE,
     COORDONNEE_CAMERA_ORIGINE_FLOAT,
+    DECALAGE_CARTES_MODALE_HEBDO_Y,
     DECALAGE_VOISIN_NEGATIF,
     DECALAGE_VOISIN_NUL,
     DECALAGE_VOISIN_POSITIF,
+    DIVISEUR_MOITIE,
     ESPACEMENT_BOUTONS_OUTIL_X,
+    ESPACEMENT_CARTES_OFFRE_X,
+    FACTEUR_DOUBLE_MARGE,
     FACTEUR_ECHELLE_UNITE,
     HAUTEUR_BOUTON_OUTIL,
+    HAUTEUR_CARTE_OFFRE_HEBDO,
+    HAUTEUR_FENETRE,
+    HAUTEUR_PANNEAU_HEBDOMADAIRE,
     INDICE_AVANT_DERNIERE_CASE_TRACEE,
     INDICE_BOUTON_DROIT,
     INDICE_BOUTON_GAUCHE,
     INDICE_DERNIERE_CASE_TRACEE,
+    INDICE_OPTION_HEBDOMADAIRE_1,
+    INDICE_OPTION_HEBDOMADAIRE_2,
     LARGEUR_BOUTON_OUTIL,
+    LARGEUR_CARTE_OFFRE_HEBDO,
+    LARGEUR_FENETRE,
+    NB_OPTIONS_HEBDOMADAIRES,
     OUTIL_AUTOROUTE,
     OUTIL_FEU,
     OUTIL_ROND_POINT,
@@ -29,6 +43,9 @@ from src.config import (
 )
 from src.models.entity import Maison, Usine
 from src.models.grid import Grid
+
+if TYPE_CHECKING:
+    from src.controllers.game_engine import GameEngine
 
 
 class InputHandler:
@@ -601,20 +618,123 @@ class InputHandler:
             )
         self.derniere_case_tracee = case_actuelle
 
+    def obtenir_rectangles_cartes_hebdomadaires(
+        self,
+    ) -> list[pygame.Rect]:
+        """Calcule les rectangles cliquables des 2 offres du lundi.
+
+        Returns:
+            Liste des 2 pygame.Rect (Option 1 à gauche, Option 2 à droite).
+        """
+        centre_ecran_x: int = LARGEUR_FENETRE // DIVISEUR_MOITIE
+        centre_ecran_y: int = HAUTEUR_FENETRE // DIVISEUR_MOITIE
+        panneau_y: int = (
+            centre_ecran_y - HAUTEUR_PANNEAU_HEBDOMADAIRE // DIVISEUR_MOITIE
+        )
+        largeur_totale_cartes: int = (
+            FACTEUR_DOUBLE_MARGE * LARGEUR_CARTE_OFFRE_HEBDO
+            + ESPACEMENT_CARTES_OFFRE_X
+        )
+        depart_cartes_x: int = (
+            centre_ecran_x - largeur_totale_cartes // DIVISEUR_MOITIE
+        )
+        cartes_y: int = panneau_y + DECALAGE_CARTES_MODALE_HEBDO_Y
+
+        rectangles: list[pygame.Rect] = []
+        for indice_carte in range(NB_OPTIONS_HEBDOMADAIRES):
+            carte_x: int = depart_cartes_x + indice_carte * (
+                LARGEUR_CARTE_OFFRE_HEBDO + ESPACEMENT_CARTES_OFFRE_X
+            )
+            rectangle_carte: pygame.Rect = pygame.Rect(
+                carte_x,
+                cartes_y,
+                LARGEUR_CARTE_OFFRE_HEBDO,
+                HAUTEUR_CARTE_OFFRE_HEBDO,
+            )
+            rectangles.append(rectangle_carte)
+        return rectangles
+
+    def gerer_evenement_choix_hebdomadaire(
+        self,
+        evenement: pygame.event.Event,
+        moteur_jeu: "GameEngine",
+    ) -> None:
+        """Traite le clic ou raccourci clavier lors de la pause du lundi.
+
+        Args:
+            evenement: Événement Pygame capturé.
+            moteur_jeu: Instance de GameEngine en attente de choix.
+        """
+        self.derniere_case_tracee = None
+        self.historique_trace_courant = []
+        self.maison_en_reorientation = None
+        self.usine_en_reorientation = None
+
+        if evenement.type == pygame.KEYDOWN:
+            if (
+                evenement.key == pygame.K_1
+                or evenement.key == pygame.K_KP1
+            ):
+                moteur_jeu.appliquer_choix_hebdomadaire(
+                    INDICE_OPTION_HEBDOMADAIRE_1
+                )
+            else:
+                if (
+                    evenement.key == pygame.K_2
+                    or evenement.key == pygame.K_KP2
+                ):
+                    moteur_jeu.appliquer_choix_hebdomadaire(
+                        INDICE_OPTION_HEBDOMADAIRE_2
+                    )
+                else:
+                    pass
+            return
+        else:
+            pass
+
+        if (
+            evenement.type == pygame.MOUSEBUTTONDOWN
+            and evenement.button == BOUTON_SOURIS_GAUCHE
+        ):
+            rectangles_offres: list[pygame.Rect] = (
+                self.obtenir_rectangles_cartes_hebdomadaires()
+            )
+            for indice_offre, rectangle_offre in enumerate(rectangles_offres):
+                if rectangle_offre.collidepoint(evenement.pos):
+                    moteur_jeu.appliquer_choix_hebdomadaire(indice_offre)
+                    return
+                else:
+                    pass
+        else:
+            pass
+
     def gerer_evenement(
         self,
         evenement: pygame.event.Event,
         grille: Grid,
         parametres_camera: tuple[float, float, float, float] | None = None,
+        moteur_jeu: "GameEngine | None" = None,
     ) -> None:
         """Traite un événement Pygame lié au clic ou au déplacement souris.
+
+        Si le choix hebdomadaire du lundi est actif, bloque le tracé de routes
+        et redirige les clics vers les cartes d'offres.
 
         Args:
             evenement: Événement Pygame capturé dans la boucle principale.
             grille: Instance du modèle Grid sur laquelle agir.
             parametres_camera: Tuple optionnel (colonne_debut, ligne_debut,
                 taille_case_camera, facteur_zoom).
+            moteur_jeu: Instance optionnelle de GameEngine pour la modale.
         """
+        if (
+            moteur_jeu is not None
+            and moteur_jeu.choix_hebdomadaire_actif
+        ):
+            self.gerer_evenement_choix_hebdomadaire(evenement, moteur_jeu)
+            return
+        else:
+            pass
         if parametres_camera is not None:
             colonne_debut, ligne_debut, taille_case_cam, _ = parametres_camera
         else:
