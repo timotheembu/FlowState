@@ -33,12 +33,16 @@ def test_chemin_direct_maison_vers_usine() -> None:
         COULEUR_ROUGE,
         case_sortie=(INDICE_TEST_DEUX, INDICE_TEST_DEUX),
     )
-    usine: Usine = Usine(INDICE_TEST_DEUX, INDICE_TEST_CINQ, COULEUR_ROUGE)
+    usine: Usine = Usine(
+        INDICE_TEST_DEUX,
+        INDICE_TEST_CINQ,
+        COULEUR_ROUGE,
+        case_sortie=(INDICE_TEST_DEUX, INDICE_TEST_QUATRE),
+    )
     grille.placer_maison(maison)
     grille.placer_usine(usine)
 
     grille.placer_route(INDICE_TEST_DEUX, INDICE_TEST_TROIS)
-    grille.placer_route(INDICE_TEST_DEUX, INDICE_TEST_QUATRE)
 
     grille.connecter_cases(
         (INDICE_TEST_DEUX, INDICE_TEST_DEUX),
@@ -84,6 +88,7 @@ def test_contournement_obstacle_et_choix_chemin_plus_court() -> None:
         INDICE_TEST_DEUX,
         INDICE_TEST_TROIS,
         COULEUR_ROUGE,
+        case_sortie=(INDICE_TEST_UN, INDICE_TEST_DEUX),
     )
     batiment_obstacle: Maison = Maison(
         INDICE_TEST_DEUX,
@@ -133,7 +138,12 @@ def test_chemin_diagonal_plus_court_que_orthogonal() -> None:
         COULEUR_ROUGE,
         case_sortie=(INDICE_TEST_DEUX, INDICE_TEST_DEUX),
     )
-    usine: Usine = Usine(INDICE_TEST_TROIS, INDICE_TEST_TROIS, COULEUR_ROUGE)
+    usine: Usine = Usine(
+        INDICE_TEST_TROIS,
+        INDICE_TEST_TROIS,
+        COULEUR_ROUGE,
+        case_sortie=(INDICE_TEST_DEUX, INDICE_TEST_DEUX),
+    )
     grille.placer_maison(maison)
     grille.placer_usine(usine)
 
@@ -176,12 +186,17 @@ def test_reseau_deconnecte_ou_bloque() -> None:
         COULEUR_ROUGE,
         case_sortie=(INDICE_TEST_UN, INDICE_TEST_DEUX),
     )
-    usine: Usine = Usine(INDICE_TEST_UN, INDICE_TEST_QUATRE, COULEUR_ROUGE)
+    usine: Usine = Usine(
+        INDICE_TEST_UN,
+        INDICE_TEST_QUATRE,
+        COULEUR_ROUGE,
+        case_sortie=(INDICE_TEST_UN, INDICE_TEST_TROIS),
+    )
     grille.placer_maison(maison)
     grille.placer_usine(usine)
 
-    # Route posée en (1, 3) adjacente à (1, 2) et à l'usine (1, 4), mais SANS connecter_cases
-    grille.placer_route(INDICE_TEST_UN, INDICE_TEST_TROIS)
+    # La sortie de la maison (1, 2) et la sortie de l'usine (1, 3) sont adjacentes
+    # mais SANS connecter_cases entre (col=2, lig=1) et (col=3, lig=1)
 
     depart: tuple[int, int] = (INDICE_TEST_UN, INDICE_TEST_UN)
     arrivee: tuple[int, int] = (INDICE_TEST_QUATRE, INDICE_TEST_UN)

@@ -117,6 +117,7 @@ class Usine:
         ligne: int,
         colonne: int,
         couleur: tuple[int, int, int],
+        case_sortie: tuple[int, int] | None = None,
     ) -> None:
         """Initialise une usine avec ses coordonnées, sa couleur et ses demandes.
 
@@ -124,14 +125,36 @@ class Usine:
             ligne: Indice de la ligne sur la grille.
             colonne: Indice de la colonne sur la grille.
             couleur: Tuple RGB représentant la couleur de l'usine.
+            case_sortie: Coordonnée optionnelle (ligne, colonne) de l'unique
+                case de route rattachée à cette usine.
         """
         self.ligne: int = ligne
         self.colonne: int = colonne
         self.couleur: tuple[int, int, int] = couleur
+        self.case_sortie: tuple[int, int] | None = case_sortie
         self.voitures_recues: int = COMPTEUR_INITIAL_LIVRAISONS
         self.demandes_actives: int = COMPTEUR_INITIAL_DEMANDES
         self.demandes_assignees: int = COMPTEUR_INITIAL_DEMANDES
         self.compteur_generation_demande: int = COMPTEUR_INITIAL_FRAMES
+
+    def definir_case_sortie(
+        self,
+        case_sortie: tuple[int, int] | None,
+    ) -> None:
+        """Définit l'unique case de route (ligne, colonne) reliée à l'usine.
+
+        Args:
+            case_sortie: Tuple (ligne, colonne) de la sortie, ou None.
+        """
+        self.case_sortie = case_sortie
+
+    def obtenir_case_sortie(self) -> tuple[int, int] | None:
+        """Retourne la coordonnée (ligne, colonne) de la route de l'usine.
+
+        Returns:
+            Un tuple (ligne, colonne) ou None si non définie.
+        """
+        return self.case_sortie
 
     def obtenir_coordonnee_grille(self) -> tuple[int, int]:
         """Retourne la coordonnée (colonne, ligne) de l'usine.

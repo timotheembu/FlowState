@@ -121,6 +121,7 @@ def test_voisins_accessibles_et_traversabilite() -> None:
         INDICE_TEST_UN,
         INDICE_TEST_TROIS,
         COULEUR_ROUGE,
+        case_sortie=(INDICE_TEST_UN, INDICE_TEST_DEUX),
     )
     maison_obstacle: Maison = Maison(
         INDICE_TEST_DEUX,

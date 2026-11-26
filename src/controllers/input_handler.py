@@ -18,7 +18,7 @@ from src.config import (
     TAILLE_CASE,
     TAILLE_MIN_HISTORIQUE_ELAGAGE,
 )
-from src.models.entity import Maison
+from src.models.entity import Maison, Usine
 from src.models.grid import Grid
 
 
@@ -30,6 +30,7 @@ class InputHandler:
         self.derniere_case_tracee: tuple[int, int] | None = None
         self.historique_trace_courant: list[tuple[int, int]] = []
         self.maison_en_reorientation: Maison | None = None
+        self.usine_en_reorientation: Usine | None = None
 
     def convertir_pixels_en_case(
         self,
@@ -86,17 +87,17 @@ class InputHandler:
         case_nouvelle: tuple[int, int],
         a_ete_posee: bool,
     ) -> None:
-        """Enregistre une case posée et supprime les coins parasites A->B->C.
+        """Enregistre une case posée et annule uniquement un demi-tour A->B->A.
 
-        Si la nouvelle case C est directement adjacente à l'avant-dernière
-        case A (distance de Chebyshev égale à 1) et que la case intermédiaire
-        B vient d'être posée dans ce même tracé sans connexion externe,
-        B est supprimée et le stock de routes est recrédité.
+        Conserve intacts tous les virages à 90 degrés (A -> B -> C avec C != A)
+        afin que le joueur puisse tracer librement des angles droits sans
+        relâcher le clic gauche, tout en supprimant B si le joueur revient
+        immédiatement sur A (A -> B -> A) sans connexion externe sur B.
 
         Args:
             grille: Instance du modèle Grid à mettre à jour.
-            case_nouvelle: Coordonnée (colonne, ligne) de la case C actuelle.
-            a_ete_posee: True si la case C vient d'être posée dans ce tracé.
+            case_nouvelle: Coordonnée (colonne, ligne) de la case actuelle.
+            a_ete_posee: True si la case vient d'être posée dans ce tracé.
         """
         colonne_c, ligne_c = case_nouvelle
         est_route_active: bool = grille.est_case_route(ligne_c, colonne_c)
@@ -112,43 +113,39 @@ class InputHandler:
             case_a: tuple[int, int] = self.historique_trace_courant[
                 INDICE_AVANT_DERNIERE_CASE_TRACEE
             ]
-            if case_nouvelle != case_b and case_nouvelle != case_a:
-                if grille.sont_cases_adjacentes_chebyshev(
-                    case_a,
-                    case_nouvelle,
-                ):
-                    cases_du_virage: list[tuple[int, int]] = [
-                        case_a,
-                        case_nouvelle,
-                    ]
-                    a_lien_externe: bool = (
-                        grille.a_connexion_externe_hors_ensemble(
-                            case_b,
-                            cases_du_virage,
-                        )
+            if case_nouvelle == case_a:
+                cases_du_demi_tour: list[tuple[int, int]] = [case_a]
+                a_lien_externe: bool = (
+                    grille.a_connexion_externe_hors_ensemble(
+                        case_b,
+                        cases_du_demi_tour,
                     )
-                    if not a_lien_externe:
-                        colonne_b, ligne_b = case_b
-                        supprimee: bool = grille.supprimer_route(
-                            ligne_b,
-                            colonne_b,
-                        )
-                        if supprimee:
-                            self.historique_trace_courant.pop()
-                            grille.connecter_cases(case_a, case_nouvelle)
-                        else:
-                            pass
+                )
+                if not a_lien_externe:
+                    colonne_b, ligne_b = case_b
+                    supprimee: bool = grille.supprimer_route(
+                        ligne_b,
+                        colonne_b,
+                    )
+                    if supprimee:
+                        self.historique_trace_courant.pop()
                     else:
                         pass
                 else:
                     pass
+                return
             else:
                 pass
         else:
             pass
 
         if a_ete_posee or est_route_active:
-            if case_nouvelle not in self.historique_trace_courant:
+            if (
+                len(self.historique_trace_courant)
+                == DECALAGE_VOISIN_NUL
+                or self.historique_trace_courant[INDICE_DERNIERE_CASE_TRACEE]
+                != case_nouvelle
+            ):
                 self.historique_trace_courant.append(case_nouvelle)
             else:
                 pass
@@ -290,6 +287,81 @@ class InputHandler:
             self.maison_en_reorientation = None
             return False
 
+    def tenter_reorientation_sortie_usine(
+        self,
+        grille: Grid,
+        ligne: int,
+        colonne: int,
+    ) -> bool:
+        """Tente de réorienter la case_sortie d'une usine lors d'un glissement.
+
+        Args:
+            grille: Instance du modèle Grid à modifier.
+            ligne: Ligne actuellement survolée par la souris.
+            colonne: Colonne actuellement survolée par la souris.
+
+        Returns:
+            True si l'action a été traitée comme une sélection ou une
+            réorientation de sortie d'usine, False si le tracé normal
+            doit prendre le relais.
+        """
+        if self.usine_en_reorientation is None:
+            return False
+        else:
+            pass
+
+        usine: Usine = self.usine_en_reorientation
+        if ligne == usine.ligne and colonne == usine.colonne:
+            return True
+        else:
+            pass
+
+        coordonnee_usine: tuple[int, int] = (usine.colonne, usine.ligne)
+        coordonnee_cible: tuple[int, int] = (colonne, ligne)
+        if grille.sont_cases_adjacentes_chebyshev(
+            coordonnee_usine,
+            coordonnee_cible,
+        ):
+            if self.derniere_case_tracee == coordonnee_usine:
+                reorientee: bool = grille.reorienter_sortie_usine(
+                    usine,
+                    ligne,
+                    colonne,
+                )
+                if reorientee and usine.case_sortie is not None:
+                    lig_sortie, col_sortie = usine.case_sortie
+                    case_sortie_col_lig: tuple[int, int] = (
+                        col_sortie,
+                        lig_sortie,
+                    )
+                    self.derniere_case_tracee = case_sortie_col_lig
+                    self.historique_trace_courant = [case_sortie_col_lig]
+                    self.usine_en_reorientation = None
+                    return True
+                else:
+                    if usine.case_sortie == (ligne, colonne):
+                        case_sortie_actuelle: tuple[int, int] = (
+                            colonne,
+                            ligne,
+                        )
+                        self.derniere_case_tracee = case_sortie_actuelle
+                        self.historique_trace_courant = [case_sortie_actuelle]
+                        self.usine_en_reorientation = None
+                        return True
+                    else:
+                        return False
+            else:
+                self.usine_en_reorientation = None
+                return False
+        else:
+            if usine.case_sortie is not None:
+                lig_sortie, col_sortie = usine.case_sortie
+                self.derniere_case_tracee = (col_sortie, lig_sortie)
+            else:
+                pass
+            self.usine_en_reorientation = None
+            return False
+
     def appliquer_action_clic_gauche(
         self,
         grille: Grid,
@@ -299,7 +371,7 @@ class InputHandler:
         ligne_debut_camera: float = COORDONNEE_CAMERA_ORIGINE_FLOAT,
         taille_case_camera: float = float(TAILLE_CASE),
     ) -> None:
-        """Trace une route ou réoriente la case_sortie d'une maison.
+        """Trace une route ou réoriente la case_sortie d'une Maison ou d'une Usine.
 
         Args:
             grille: Instance du modèle Grid à modifier.
@@ -327,21 +399,44 @@ class InputHandler:
                 self.derniere_case_tracee = case_actuelle
                 return
             else:
-                maison_sortie: Maison | None = (
-                    grille.obtenir_maison_proprietaire_sortie(ligne, colonne)
+                pass
+
+            usine_cliquee: Usine | None = (
+                grille.obtenir_usine_a_coordonnee(ligne, colonne)
+            )
+            if usine_cliquee is not None:
+                self.usine_en_reorientation = usine_cliquee
+                self.derniere_case_tracee = case_actuelle
+                return
+            else:
+                pass
+
+            maison_sortie: Maison | None = (
+                grille.obtenir_maison_proprietaire_sortie(ligne, colonne)
+            )
+            if maison_sortie is not None:
+                self.maison_en_reorientation = maison_sortie
+                self.derniere_case_tracee = case_actuelle
+                self.historique_trace_courant = [case_actuelle]
+                return
+            else:
+                pass
+
+            usine_sortie: Usine | None = (
+                grille.obtenir_usine_proprietaire_sortie(ligne, colonne)
+            )
+            if usine_sortie is not None:
+                self.usine_en_reorientation = usine_sortie
+                self.derniere_case_tracee = case_actuelle
+                self.historique_trace_courant = [case_actuelle]
+                return
+            else:
+                a_ete_posee: bool = grille.placer_route(ligne, colonne)
+                self.enregistrer_et_nettoyer_case_tracee(
+                    grille,
+                    case_actuelle,
+                    a_ete_posee,
                 )
-                if maison_sortie is not None:
-                    self.maison_en_reorientation = maison_sortie
-                    self.derniere_case_tracee = case_actuelle
-                    self.historique_trace_courant = [case_actuelle]
-                    return
-                else:
-                    a_ete_posee: bool = grille.placer_route(ligne, colonne)
-                    self.enregistrer_et_nettoyer_case_tracee(
-                        grille,
-                        case_actuelle,
-                        a_ete_posee,
-                    )
         else:
             if self.tenter_reorientation_sortie_maison(
                 grille,
@@ -350,12 +445,19 @@ class InputHandler:
             ):
                 return
             else:
-                self.interpoler_action_entre_cases(
+                if self.tenter_reorientation_sortie_usine(
                     grille,
-                    self.derniere_case_tracee,
-                    case_actuelle,
-                    est_suppression=False,
-                )
+                    ligne,
+                    colonne,
+                ):
+                    return
+                else:
+                    self.interpoler_action_entre_cases(
+                        grille,
+                        self.derniere_case_tracee,
+                        case_actuelle,
+                        est_suppression=False,
+                    )
         self.derniere_case_tracee = case_actuelle
 
     def appliquer_action_clic_droit(
@@ -422,6 +524,7 @@ class InputHandler:
             self.derniere_case_tracee = None
             self.historique_trace_courant = []
             self.maison_en_reorientation = None
+            self.usine_en_reorientation = None
             position_x, position_y = evenement.pos
             if evenement.button == BOUTON_SOURIS_GAUCHE:
                 self.appliquer_action_clic_gauche(
@@ -449,6 +552,7 @@ class InputHandler:
                 self.derniere_case_tracee = None
                 self.historique_trace_courant = []
                 self.maison_en_reorientation = None
+                self.usine_en_reorientation = None
             else:
                 if evenement.type == pygame.MOUSEMOTION:
                     position_x, position_y = evenement.pos
@@ -467,6 +571,7 @@ class InputHandler:
                     else:
                         self.historique_trace_courant = []
                         self.maison_en_reorientation = None
+                        self.usine_en_reorientation = None
                         if boutons_presses[INDICE_BOUTON_DROIT]:
                             self.appliquer_action_clic_droit(
                                 grille,

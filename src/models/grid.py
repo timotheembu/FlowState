@@ -299,6 +299,94 @@ class Grid:
         else:
             return False
 
+    def obtenir_usine_a_coordonnee(
+        self,
+        ligne: int,
+        colonne: int,
+    ) -> Usine | None:
+        """Retourne l'usine située aux coordonnées données si elle existe.
+
+        Args:
+            ligne: Indice de la ligne.
+            colonne: Indice de la colonne.
+
+        Returns:
+            Instance de Usine correspondante, ou None.
+        """
+        for usine in self.usines:
+            if usine.ligne == ligne and usine.colonne == colonne:
+                return usine
+            else:
+                pass
+        return None
+
+    def obtenir_usine_proprietaire_sortie(
+        self,
+        ligne: int,
+        colonne: int,
+    ) -> Usine | None:
+        """Retourne l'usine dont la case_sortie correspond à (ligne, colonne).
+
+        Args:
+            ligne: Indice de la ligne de la route.
+            colonne: Indice de la colonne de la route.
+
+        Returns:
+            Instance de Usine propriétaire de cette sortie, ou None.
+        """
+        coordonnee_cible: tuple[int, int] = (ligne, colonne)
+        for usine in self.usines:
+            if usine.case_sortie == coordonnee_cible:
+                return usine
+            else:
+                pass
+        return None
+
+    def est_case_sortie_d_usine(
+        self,
+        ligne: int,
+        colonne: int,
+    ) -> bool:
+        """Indique si la case (ligne, colonne) est la sortie d'une usine.
+
+        Args:
+            ligne: Indice de la ligne.
+            colonne: Indice de la colonne.
+
+        Returns:
+            True si une usine possède cette case comme case_sortie, False sinon.
+        """
+        usine_proprietaire: Usine | None = (
+            self.obtenir_usine_proprietaire_sortie(ligne, colonne)
+        )
+        if usine_proprietaire is not None:
+            return True
+        else:
+            return False
+
+    def est_case_sortie_de_batiment(
+        self,
+        ligne: int,
+        colonne: int,
+    ) -> bool:
+        """Indique si la case est le bout de route d'une Maison ou d'une Usine.
+
+        Args:
+            ligne: Indice de la ligne.
+            colonne: Indice de la colonne.
+
+        Returns:
+            True si la case est la case_sortie d'une maison ou d'une usine,
+            False sinon.
+        """
+        if self.est_case_sortie_de_maison(ligne, colonne):
+            return True
+        else:
+            if self.est_case_sortie_d_usine(ligne, colonne):
+                return True
+            else:
+                return False
+
     def compter_routes_adjacentes_maison(
         self,
         maison: Maison,
@@ -491,7 +579,7 @@ class Grid:
             voisin_ligne: int = maison.ligne + delta_ligne
             voisin_colonne: int = maison.colonne + delta_colonne
             if self.est_case_route(voisin_ligne, voisin_colonne):
-                if not self.est_case_sortie_de_maison(
+                if not self.est_case_sortie_de_batiment(
                     voisin_ligne,
                     voisin_colonne,
                 ):
@@ -637,8 +725,225 @@ class Grid:
         else:
             return False
 
+    def obtenir_cible_orientation_usine(
+        self,
+        usine: Usine,
+    ) -> tuple[float, float]:
+        """Détermine le point (ligne, colonne) vers lequel orienter l'usine.
+
+        Privilégie la maison de même couleur la plus proche ; à défaut, vise
+        le centre de la grille.
+
+        Args:
+            usine: Instance de Usine à orienter.
+
+        Returns:
+            Un tuple (ligne_cible, colonne_cible) flottant.
+        """
+        meilleure_maison: Maison | None = None
+        meilleure_distance: float = float(self.nb_lignes + self.nb_colonnes)
+
+        for maison in self.maisons:
+            if maison.couleur == usine.couleur:
+                distance: float = hypot(
+                    float(maison.ligne - usine.ligne),
+                    float(maison.colonne - usine.colonne),
+                )
+                if meilleure_maison is None or distance < meilleure_distance:
+                    meilleure_maison = maison
+                    meilleure_distance = distance
+                else:
+                    pass
+            else:
+                pass
+
+        if meilleure_maison is not None:
+            return (
+                float(meilleure_maison.ligne),
+                float(meilleure_maison.colonne),
+            )
+        else:
+            moitie: float = float(DIVISEUR_MOITIE)
+            return (
+                float(self.nb_lignes) / moitie,
+                float(self.nb_colonnes) / moitie,
+            )
+
+    def initialiser_sortie_usine(self, usine: Usine) -> bool:
+        """Attribue, pose gratuitement et connecte la case_sortie d'une usine.
+
+        Si une route libre d'attache est déjà adjacente à l'usine, elle
+        devient la case_sortie et y est connectée. Sinon, choisit la
+        meilleure case libre adjacente, y pose gratuitement une CASE_ROUTE
+        et la connecte à l'usine.
+
+        Args:
+            usine: Instance de Usine nouvellement placée.
+
+        Returns:
+            True si une case_sortie a été associée et connectée, False sinon.
+        """
+        coordonnee_usine: tuple[int, int] = (usine.colonne, usine.ligne)
+
+        if usine.case_sortie is not None:
+            lig_sortie, col_sortie = usine.case_sortie
+            if self.est_case_libre(lig_sortie, col_sortie):
+                self.definir_etat_case(
+                    lig_sortie,
+                    col_sortie,
+                    CASE_ROUTE,
+                )
+                self.connecter_cases(
+                    coordonnee_usine,
+                    (col_sortie, lig_sortie),
+                )
+                return True
+            else:
+                if self.est_case_route(lig_sortie, col_sortie):
+                    self.connecter_cases(
+                        coordonnee_usine,
+                        (col_sortie, lig_sortie),
+                    )
+                    return True
+                else:
+                    pass
+
+        routes_adjacentes: list[tuple[int, int]] = []
+        for delta_colonne, delta_ligne in DIRECTIONS_HUIT_VOISINS:
+            voisin_ligne: int = usine.ligne + delta_ligne
+            voisin_colonne: int = usine.colonne + delta_colonne
+            if self.est_case_route(voisin_ligne, voisin_colonne):
+                if not self.est_case_sortie_de_batiment(
+                    voisin_ligne,
+                    voisin_colonne,
+                ):
+                    routes_adjacentes.append((voisin_ligne, voisin_colonne))
+                else:
+                    pass
+            else:
+                pass
+
+        if len(routes_adjacentes) == NB_MAX_ROUTES_ADJACENTES_MAISON:
+            sortie_existante: tuple[int, int] = routes_adjacentes[
+                INDICE_MINIMUM_GRILLE
+            ]
+            usine.definir_case_sortie(sortie_existante)
+            lig_existante, col_existante = sortie_existante
+            self.connecter_cases(
+                coordonnee_usine,
+                (col_existante, lig_existante),
+            )
+            return True
+        else:
+            pass
+
+        cible_ligne, cible_colonne = self.obtenir_cible_orientation_usine(
+            usine
+        )
+        meilleure_case: tuple[int, int] | None = None
+        meilleure_distance: float = float(self.nb_lignes + self.nb_colonnes)
+
+        for delta_colonne, delta_ligne in DIRECTIONS_HUIT_VOISINS:
+            voisin_ligne = usine.ligne + delta_ligne
+            voisin_colonne = usine.colonne + delta_colonne
+            if self.est_case_libre(voisin_ligne, voisin_colonne):
+                distance_cible: float = hypot(
+                    float(voisin_ligne) - cible_ligne,
+                    float(voisin_colonne) - cible_colonne,
+                )
+                if (
+                    meilleure_case is None
+                    or distance_cible < meilleure_distance
+                ):
+                    meilleure_case = (voisin_ligne, voisin_colonne)
+                    meilleure_distance = distance_cible
+                else:
+                    pass
+            else:
+                pass
+
+        if meilleure_case is not None:
+            lig_choisie, col_choisie = meilleure_case
+            self.definir_etat_case(lig_choisie, col_choisie, CASE_ROUTE)
+            usine.definir_case_sortie(meilleure_case)
+            self.connecter_cases(
+                coordonnee_usine,
+                (col_choisie, lig_choisie),
+            )
+            return True
+        else:
+            return False
+
+    def reorienter_sortie_usine(
+        self,
+        usine: Usine,
+        nouvelle_ligne: int,
+        nouvelle_colonne: int,
+    ) -> bool:
+        """Déplace gratuitement la case_sortie d'une usine vers une case voisine.
+
+        Supprime l'ancienne case_sortie (et ses connexions) et place la
+        nouvelle sur une case libre adjacente à l'usine sans modifier le
+        stock de routes, puis connecte uniquement l'usine à cette sortie.
+
+        Args:
+            usine: Instance de Usine dont on réoriente la sortie.
+            nouvelle_ligne: Ligne de la nouvelle case de sortie souhaitée.
+            nouvelle_colonne: Colonne de la nouvelle case de sortie souhaitée.
+
+        Returns:
+            True si la sortie a été réorientée, False sinon.
+        """
+        coordonnee_usine: tuple[int, int] = (usine.colonne, usine.ligne)
+        coordonnee_nouvelle: tuple[int, int] = (
+            nouvelle_colonne,
+            nouvelle_ligne,
+        )
+        if not self.sont_cases_adjacentes_chebyshev(
+            coordonnee_usine,
+            coordonnee_nouvelle,
+        ):
+            return False
+        else:
+            pass
+
+        nouvelle_sortie: tuple[int, int] = (nouvelle_ligne, nouvelle_colonne)
+        if usine.case_sortie == nouvelle_sortie:
+            self.connecter_cases(coordonnee_usine, coordonnee_nouvelle)
+            return True
+        else:
+            pass
+
+        if not self.est_case_libre(nouvelle_ligne, nouvelle_colonne):
+            return False
+        else:
+            pass
+
+        ancienne_sortie: tuple[int, int] | None = usine.case_sortie
+        if ancienne_sortie is not None:
+            ancienne_ligne, ancienne_colonne = ancienne_sortie
+            self.retirer_toutes_connexions_case(
+                (ancienne_colonne, ancienne_ligne)
+            )
+            if self.est_case_route(ancienne_ligne, ancienne_colonne):
+                self.definir_etat_case(
+                    ancienne_ligne,
+                    ancienne_colonne,
+                    CASE_VIDE,
+                )
+            else:
+                pass
+        else:
+            pass
+
+        self.retirer_toutes_connexions_case(coordonnee_usine)
+        self.definir_etat_case(nouvelle_ligne, nouvelle_colonne, CASE_ROUTE)
+        usine.definir_case_sortie(nouvelle_sortie)
+        self.connecter_cases(coordonnee_usine, coordonnee_nouvelle)
+        return True
+
     def placer_usine(self, usine: Usine) -> bool:
-        """Place une usine sur la grille si la case cible est libre.
+        """Place une usine sur la grille et crée gratuitement sa case_sortie.
 
         Args:
             usine: Instance de Usine à placer.
@@ -649,6 +954,7 @@ class Grid:
         if self.est_case_libre(usine.ligne, usine.colonne):
             self.definir_etat_case(usine.ligne, usine.colonne, CASE_USINE)
             self.usines.append(usine)
+            self.initialiser_sortie_usine(usine)
             return True
         else:
             return False
@@ -774,6 +1080,83 @@ class Grid:
                 else:
                     return False
 
+    def autoriser_connexion_usine(
+        self,
+        ligne_usine: int,
+        colonne_usine: int,
+        ligne_autre: int,
+        colonne_autre: int,
+    ) -> bool:
+        """Vérifie si une Usine peut être connectée à une case adjacente.
+
+        Une Usine ne peut être connectée qu'à une CASE_ROUTE qui est son
+        unique case_sortie, et ne peut jamais dépasser 1 liaison dans
+        self.connexions (interdiction de traverser une usine avec deux routes).
+
+        Args:
+            ligne_usine: Ligne de l'usine.
+            colonne_usine: Colonne de l'usine.
+            ligne_autre: Ligne de l'autre case à connecter.
+            colonne_autre: Colonne de l'autre case à connecter.
+
+        Returns:
+            True si la connexion avec cette usine est valide, False sinon.
+        """
+        if not self.est_case_route(ligne_autre, colonne_autre):
+            return False
+        else:
+            pass
+
+        usine: Usine | None = self.obtenir_usine_a_coordonnee(
+            ligne_usine,
+            colonne_usine,
+        )
+        if usine is None:
+            return False
+        else:
+            pass
+
+        coordonnee_autre_lig_col: tuple[int, int] = (
+            ligne_autre,
+            colonne_autre,
+        )
+        coordonnee_usine_col_lig: tuple[int, int] = (
+            colonne_usine,
+            ligne_usine,
+        )
+        coordonnee_autre_col_lig: tuple[int, int] = (
+            colonne_autre,
+            ligne_autre,
+        )
+
+        if usine.case_sortie is not None:
+            if usine.case_sortie != coordonnee_autre_lig_col:
+                return False
+            else:
+                voisins_actuels: set[tuple[int, int]] = (
+                    self.obtenir_voisins_connectes(coordonnee_usine_col_lig)
+                )
+                if len(voisins_actuels) == LONGUEUR_LISTE_VIDE:
+                    return True
+                else:
+                    if coordonnee_autre_col_lig in voisins_actuels:
+                        return True
+                    else:
+                        return False
+        else:
+            voisins_existants: set[tuple[int, int]] = (
+                self.obtenir_voisins_connectes(coordonnee_usine_col_lig)
+            )
+            if len(voisins_existants) == LONGUEUR_LISTE_VIDE:
+                usine.definir_case_sortie(coordonnee_autre_lig_col)
+                return True
+            else:
+                if coordonnee_autre_col_lig in voisins_existants:
+                    usine.definir_case_sortie(coordonnee_autre_lig_col)
+                    return True
+                else:
+                    return False
+
     def connecter_cases(
         self,
         case_a: tuple[int, int],
@@ -785,7 +1168,7 @@ class Grid:
         La liaison n'est enregistrée que si les cases sont adjacentes
         (distance de Chebyshev == 1) et respectent les règles métier :
         - Une Maison ne se connecte qu'à son unique case_sortie.
-        - Une Usine se connecte à n'importe quelle route adjacente.
+        - Une Usine ne se connecte qu'à son unique case_sortie.
         - Deux routes adjacentes se connectent explicitement.
 
         Args:
@@ -857,6 +1240,32 @@ class Grid:
         else:
             pass
 
+        if etat_a == CASE_USINE:
+            if not self.autoriser_connexion_usine(
+                ligne_a,
+                colonne_a,
+                ligne_b,
+                colonne_b,
+            ):
+                return False
+            else:
+                pass
+        else:
+            pass
+
+        if etat_b == CASE_USINE:
+            if not self.autoriser_connexion_usine(
+                ligne_b,
+                colonne_b,
+                ligne_a,
+                colonne_a,
+            ):
+                return False
+            else:
+                pass
+        else:
+            pass
+
         self.ajouter_arete_connexion(case_a, case_b)
         return True
 
@@ -910,7 +1319,7 @@ class Grid:
         """Supprime un segment de route et retire ses arêtes dans connexions.
 
         Refuse la suppression du bout de route obligatoire (case_sortie)
-        d'une maison.
+        d'une Maison ou d'une Usine.
 
         Args:
             ligne: Indice de la ligne où supprimer la route.
@@ -920,7 +1329,7 @@ class Grid:
             True si une route a été supprimée, False sinon.
         """
         if self.est_case_route(ligne, colonne):
-            if self.est_case_sortie_de_maison(ligne, colonne):
+            if self.est_case_sortie_de_batiment(ligne, colonne):
                 return False
             else:
                 coordonnee_col_lig: tuple[int, int] = (colonne, ligne)
@@ -1026,14 +1435,17 @@ class Grid:
         coordonnee_source: tuple[int, int],
         coordonnee_destination: tuple[int, int],
     ) -> bool:
-        """Vérifie que l'entrée ou la sortie d'une maison passe par sa case_sortie.
+        """Vérifie que l'entrée ou la sortie d'un bâtiment passe par sa case_sortie.
+
+        S'applique aussi bien aux Maisons qu'aux Usines dotées d'une
+        case_sortie.
 
         Args:
             coordonnee_source: Coordonnée (colonne, ligne) de départ du pas.
             coordonnee_destination: Coordonnée (colonne, ligne) d'arrivée du pas.
 
         Returns:
-            True si la transition est valide vis-à-vis des maisons, False sinon.
+            True si la transition est valide vis-à-vis des bâtiments, False sinon.
         """
         col_src, lig_src = coordonnee_source
         col_dst, lig_dst = coordonnee_destination
@@ -1056,6 +1468,30 @@ class Grid:
         )
         if maison_dst is not None and maison_dst.case_sortie is not None:
             if (lig_src, col_src) != maison_dst.case_sortie:
+                return False
+            else:
+                pass
+        else:
+            pass
+
+        usine_src: Usine | None = self.obtenir_usine_a_coordonnee(
+            lig_src,
+            col_src,
+        )
+        if usine_src is not None and usine_src.case_sortie is not None:
+            if (lig_dst, col_dst) != usine_src.case_sortie:
+                return False
+            else:
+                pass
+        else:
+            pass
+
+        usine_dst: Usine | None = self.obtenir_usine_a_coordonnee(
+            lig_dst,
+            col_dst,
+        )
+        if usine_dst is not None and usine_dst.case_sortie is not None:
+            if (lig_src, col_src) != usine_dst.case_sortie:
                 return False
             else:
                 pass
