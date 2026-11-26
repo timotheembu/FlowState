@@ -32,3 +32,6 @@ htmlcov/
 .idea/
 .DS_Store
 *.swp
+
+# Local high scores
+scores.json

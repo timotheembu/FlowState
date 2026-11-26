@@ -888,6 +888,23 @@ class InputHandler:
             moteur_jeu: Instance optionnelle de GameEngine pour la modale.
         """
         if (
+            evenement.type == pygame.MOUSEBUTTONDOWN
+            and evenement.button == BOUTON_SOURIS_GAUCHE
+        ):
+            pos_clic_x, pos_clic_y = evenement.pos
+            if self.verifier_clic_bouton_retour_hud(pos_clic_x, pos_clic_y):
+                return
+            else:
+                pass
+        else:
+            pass
+
+        if moteur_jeu is not None and moteur_jeu.partie_perdue:
+            return
+        else:
+            pass
+
+        if (
             moteur_jeu is not None
             and moteur_jeu.choix_hebdomadaire_actif
         ):
@@ -913,10 +930,6 @@ class InputHandler:
             and evenement.button == BOUTON_SOURIS_GAUCHE
         ):
             pos_clic_x, pos_clic_y = evenement.pos
-            if self.verifier_clic_bouton_retour_hud(pos_clic_x, pos_clic_y):
-                return
-            else:
-                pass
             if self.verifier_clic_bouton_mode_hud(pos_clic_x, pos_clic_y):
                 return
             else:

@@ -3,10 +3,17 @@
 from math import hypot, sin
 
 from src.config import (
+    AMPLITUDE_BAIE_RIO,
+    AMPLITUDE_LOIRE_ORLEANS,
+    AMPLITUDE_SINUS_MANILA,
     AMPLITUDE_SINUS_RIVIERE,
+    CARTE_MANILA,
     CARTE_MONTAGNES,
+    CARTE_ORLEANS,
     CARTE_PLAINE,
+    CARTE_RIO,
     CARTE_RIVIERE,
+    CARTE_ZURICH,
     CASE_EAU,
     CASE_MAISON,
     CASE_MONTAGNE,
@@ -17,6 +24,10 @@ from src.config import (
     CASE_USINE,
     CASE_VIDE,
     COLONNE_BASE_RIVIERE,
+    COLONNE_COTE_RIO_BASE,
+    COLONNE_DEPART_LOIRE_ORLEANS,
+    COLONNE_GUE_MANILA_MAX,
+    COLONNE_GUE_MANILA_MIN,
     COMPTEUR_INITIAL_FRAMES,
     DIRECTIONS_HUIT_VOISINS,
     DISTANCE_CHEBYSHEV_ADJACENTE,
@@ -24,19 +35,29 @@ from src.config import (
     DISTANCE_MIN_ENTRE_BATIMENTS,
     DISTANCE_MIN_SECOURS_BATIMENT,
     DIVISEUR_MOITIE,
+    FREQUENCE_BAIE_RIO,
+    FREQUENCE_LOIRE_ORLEANS,
+    FREQUENCE_SINUS_MANILA,
     FREQUENCE_SINUS_RIVIERE,
+    ILOTS_MANILA,
     INDICE_MINIMUM_GRILLE,
+    LARGEUR_BRAS_MER_MANILA,
     LARGEUR_RIVIERE_CASES,
+    LIGNE_BAIE_SUD_RIO,
+    LIGNE_BASE_MANILA,
     LIGNE_GUE_RIVIERE_MAX,
     LIGNE_GUE_RIVIERE_MIN,
     LONGUEUR_LISTE_VIDE,
     MARGE_BORDURE_APPARITION,
     MARGE_BORDURE_NULLE,
     MASSIFS_MONTAGNEUX_DEFAUT,
+    MASSIFS_RIO,
+    MASSIFS_ZURICH,
     NB_COLONNES,
     NB_LIGNES,
     NB_MAX_ROUTES_ADJACENTES_MAISON,
     PAS_INCREMENT_COMPTEUR,
+    PENTE_DIAGONALE_LOIRE_ORLEANS,
     RAYON_ZONE_CENTRALE_DEGAGEE,
     STOCK_AUTOROUTES_INITIAL,
     STOCK_FEUX_INITIAL,
@@ -419,9 +440,16 @@ class Grid:
                 else:
                     pass
 
-    def generer_massifs_montagneux(self) -> None:
-        """Place des amas de CASE_MONTAGNE autour de la vallée centrale."""
-        for ligne_centre, colonne_centre, rayon in MASSIFS_MONTAGNEUX_DEFAUT:
+    def generer_amas_montagneux(
+        self,
+        liste_massifs: list[tuple[int, int, int]],
+    ) -> None:
+        """Place une liste de massifs (ligne, colonne, rayon) en CASE_MONTAGNE.
+
+        Args:
+            liste_massifs: Liste de tuples (ligne_centre, col_centre, rayon).
+        """
+        for ligne_centre, colonne_centre, rayon in liste_massifs:
             for indice_ligne in range(self.nb_lignes):
                 for indice_colonne in range(self.nb_colonnes):
                     distance: float = hypot(
@@ -446,28 +474,175 @@ class Grid:
                     else:
                         pass
 
+    def generer_massifs_montagneux(self) -> None:
+        """Place des amas de CASE_MONTAGNE autour de la vallée centrale."""
+        self.generer_amas_montagneux(MASSIFS_MONTAGNEUX_DEFAUT)
+
+    def generer_relief_orleans(self) -> None:
+        """Trace la Loire traversant la plaine d'Orléans en diagonale."""
+        for indice_ligne in range(self.nb_lignes):
+            decalage_diag: float = (
+                float(indice_ligne) * PENTE_DIAGONALE_LOIRE_ORLEANS
+            )
+            ondulation: float = (
+                sin(float(indice_ligne) * FREQUENCE_LOIRE_ORLEANS)
+                * AMPLITUDE_LOIRE_ORLEANS
+            )
+            colonne_centrale: int = int(
+                round(
+                    float(COLONNE_DEPART_LOIRE_ORLEANS)
+                    - decalage_diag
+                    + ondulation
+                )
+            )
+            for decalage_largeur in range(LARGEUR_RIVIERE_CASES):
+                colonne_eau: int = colonne_centrale + decalage_largeur
+                if self.est_case_libre(indice_ligne, colonne_eau):
+                    if not self.est_dans_zone_centrale_degagee(
+                        indice_ligne,
+                        colonne_eau,
+                    ):
+                        self.definir_etat_case(
+                            indice_ligne,
+                            colonne_eau,
+                            CASE_EAU,
+                        )
+                    else:
+                        pass
+                else:
+                    pass
+
+    def generer_relief_zurich(self) -> None:
+        """Trace la rivière sinueuse et les massifs alpins de Zurich."""
+        self.generer_riviere_sinueuse()
+        self.generer_amas_montagneux(MASSIFS_ZURICH)
+
+    def generer_relief_manila(self) -> None:
+        """Trace le bras de mer central et les reliefs côtiers de Manila."""
+        for indice_colonne in range(self.nb_colonnes):
+            est_dans_gue: bool = (
+                COLONNE_GUE_MANILA_MIN
+                <= indice_colonne
+                <= COLONNE_GUE_MANILA_MAX
+            )
+            if est_dans_gue:
+                continue
+            else:
+                pass
+
+            ondulation: float = (
+                sin(float(indice_colonne) * FREQUENCE_SINUS_MANILA)
+                * AMPLITUDE_SINUS_MANILA
+            )
+            ligne_centrale: int = int(
+                round(float(LIGNE_BASE_MANILA) + ondulation)
+            )
+            for decalage_epaisseur in range(LARGEUR_BRAS_MER_MANILA):
+                ligne_eau: int = ligne_centrale + decalage_epaisseur
+                if self.est_case_libre(ligne_eau, indice_colonne):
+                    if not self.est_dans_zone_centrale_degagee(
+                        ligne_eau,
+                        indice_colonne,
+                    ):
+                        self.definir_etat_case(
+                            ligne_eau,
+                            indice_colonne,
+                            CASE_EAU,
+                        )
+                    else:
+                        pass
+                else:
+                    pass
+        self.generer_amas_montagneux(ILOTS_MANILA)
+
+    def generer_relief_rio(self) -> None:
+        """Trace la baie côtière et les pains de sucre escarpés de Rio."""
+        for indice_ligne in range(self.nb_lignes):
+            ondulation_cote: float = (
+                sin(float(indice_ligne) * FREQUENCE_BAIE_RIO)
+                * AMPLITUDE_BAIE_RIO
+            )
+            colonne_rivage: int = int(
+                round(float(COLONNE_COTE_RIO_BASE) + ondulation_cote)
+            )
+            for indice_colonne in range(colonne_rivage, self.nb_colonnes):
+                if self.est_case_libre(indice_ligne, indice_colonne):
+                    if not self.est_dans_zone_centrale_degagee(
+                        indice_ligne,
+                        indice_colonne,
+                    ):
+                        self.definir_etat_case(
+                            indice_ligne,
+                            indice_colonne,
+                            CASE_EAU,
+                        )
+                    else:
+                        pass
+                else:
+                    pass
+
+        for indice_ligne in range(LIGNE_BAIE_SUD_RIO, self.nb_lignes):
+            for indice_colonne in range(self.nb_colonnes):
+                if self.est_case_libre(indice_ligne, indice_colonne):
+                    if not self.est_dans_zone_centrale_degagee(
+                        indice_ligne,
+                        indice_colonne,
+                    ):
+                        self.definir_etat_case(
+                            indice_ligne,
+                            indice_colonne,
+                            CASE_EAU,
+                        )
+                    else:
+                        pass
+                else:
+                    pass
+
+        self.generer_amas_montagneux(MASSIFS_RIO)
+
     def generer_relief_carte(
         self,
         nom_carte: str = CARTE_PLAINE,
     ) -> None:
         """Réinitialise la grille et génère le relief de la carte choisie.
 
-        Attribue également un premier bonus de franchissement adapté au
-        relief (1 pont sur Rivière, 1 tunnel sur Montagnes).
+        Attribue également les premiers bonus de franchissement adaptés au
+        relief de la ville sélectionnée.
 
         Args:
-            nom_carte: Nom de la carte ("Plaine", "Rivière", "Montagnes").
+            nom_carte: Nom de la carte ("Orléans", "Zurich", "Manila",
+                "Rio de Janeiro", ou cartes historiques).
         """
         self.reinitialiser()
-        if nom_carte == CARTE_RIVIERE:
-            self.generer_riviere_sinueuse()
+        if nom_carte == CARTE_ORLEANS:
+            self.generer_relief_orleans()
             self.stock_ponts = STOCK_PONTS_DEPART_RIVIERE
         else:
-            if nom_carte == CARTE_MONTAGNES:
-                self.generer_massifs_montagneux()
+            if nom_carte == CARTE_ZURICH:
+                self.generer_relief_zurich()
+                self.stock_ponts = STOCK_PONTS_DEPART_RIVIERE
                 self.stock_tunnels = STOCK_TUNNELS_DEPART_MONTAGNES
             else:
-                pass
+                if nom_carte == CARTE_MANILA:
+                    self.generer_relief_manila()
+                    self.stock_ponts = STOCK_PONTS_DEPART_RIVIERE
+                else:
+                    if nom_carte == CARTE_RIO:
+                        self.generer_relief_rio()
+                        self.stock_ponts = STOCK_PONTS_DEPART_RIVIERE
+                        self.stock_tunnels = STOCK_TUNNELS_DEPART_MONTAGNES
+                    else:
+                        if nom_carte == CARTE_RIVIERE:
+                            self.generer_riviere_sinueuse()
+                            self.stock_ponts = STOCK_PONTS_DEPART_RIVIERE
+                        else:
+                            if nom_carte == CARTE_MONTAGNES:
+                                self.generer_massifs_montagneux()
+                                self.stock_tunnels = (
+                                    STOCK_TUNNELS_DEPART_MONTAGNES
+                                )
+                            else:
+                                pass
 
     def crediter_recompense_hebdomadaire(
         self,

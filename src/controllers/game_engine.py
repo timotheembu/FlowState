@@ -1,6 +1,8 @@
 """Contrôleur orchestrant la simulation, la caméra progressive et le score."""
 
+import json
 import math
+import os
 import random
 
 from src.config import (
@@ -10,6 +12,9 @@ from src.config import (
     BONUS_ROND_POINT,
     BONUS_STANDARDS_DISPONIBLES,
     BONUS_TUNNEL,
+    CARTE_ORLEANS,
+    CARTES_CARROUSEL,
+    CHEMIN_FICHIER_SCORES,
     COMPTEUR_INITIAL_FRAMES,
     COMPTEUR_INITIAL_LIVRAISONS,
     DELAI_APPARITION_INITIALE_PAIRE,
@@ -46,6 +51,7 @@ from src.config import (
     QUANTITE_BONUS_LOT_STANDARD,
     ROUTES_LOT_SPECIAL,
     ROUTES_LOT_STANDARD,
+    SCORE_INITIAL_DEFAUT,
     STOCK_ROUTES_EPUISE,
     TAILLE_CASE,
     VITESSE_INTERPOLATION_CAMERA,
@@ -57,16 +63,77 @@ from src.models.grid import Grid
 from src.models.pathfinding import trouver_chemin_a_etoile
 
 
+def charger_meilleurs_scores(
+    chemin_fichier: str = CHEMIN_FICHIER_SCORES,
+) -> dict[str, int]:
+    """Charge les meilleurs scores par carte depuis le fichier JSON local.
+
+    Args:
+        chemin_fichier: Chemin du fichier JSON de sauvegarde.
+
+    Returns:
+        Dictionnaire associant chaque nom de carte à son meilleur score.
+    """
+    scores: dict[str, int] = {}
+    for nom_carte in CARTES_CARROUSEL:
+        scores[nom_carte] = SCORE_INITIAL_DEFAUT
+
+    if os.path.exists(chemin_fichier):
+        try:
+            with open(chemin_fichier, "r", encoding="utf-8") as fichier:
+                donnees: object = json.load(fichier)
+                if isinstance(donnees, dict):
+                    for cle, valeur in donnees.items():
+                        if isinstance(cle, str) and isinstance(valeur, int):
+                            if valeur >= SCORE_INITIAL_DEFAUT:
+                                scores[cle] = valeur
+                            else:
+                                pass
+                        else:
+                            pass
+                else:
+                    pass
+        except (OSError, ValueError):
+            pass
+    else:
+        pass
+
+    return scores
+
+
+def sauvegarder_meilleurs_scores(
+    scores: dict[str, int],
+    chemin_fichier: str = CHEMIN_FICHIER_SCORES,
+) -> None:
+    """Sauvegarde les meilleurs scores par carte dans le fichier JSON local.
+
+    Args:
+        scores: Dictionnaire associant chaque carte à son meilleur score.
+        chemin_fichier: Chemin du fichier JSON de sauvegarde.
+    """
+    try:
+        with open(chemin_fichier, "w", encoding="utf-8") as fichier:
+            json.dump(scores, fichier, ensure_ascii=False)
+    except OSError:
+        pass
+
+
 class GameEngine:
     """Orchestre l'apparition progressive, la caméra, le temps et le trafic."""
 
-    def __init__(self, grille: Grid) -> None:
+    def __init__(
+        self,
+        grille: Grid,
+        nom_carte: str = CARTE_ORLEANS,
+    ) -> None:
         """Initialise le moteur de simulation avec la grille et l'horloge.
 
         Args:
             grille: Instance du modèle Grid contenant bâtiments et routes.
+            nom_carte: Nom de la carte en cours pour le suivi du meilleur score.
         """
         self.grille: Grid = grille
+        self.nom_carte: str = nom_carte
         self.voitures: list[Voiture] = []
         self.compteur_apparition_batiment: int = COMPTEUR_INITIAL_FRAMES
         self.intervalle_apparition_batiment: int = (
@@ -74,6 +141,11 @@ class GameEngine:
         )
         self.premiere_paire_apparue: bool = False
         self.score: int = COMPTEUR_INITIAL_LIVRAISONS
+        self.meilleurs_scores: dict[str, int] = charger_meilleurs_scores()
+        if nom_carte in self.meilleurs_scores:
+            self.meilleur_score_carte: int = self.meilleurs_scores[nom_carte]
+        else:
+            self.meilleur_score_carte = SCORE_INITIAL_DEFAUT
         self.partie_perdue: bool = False
         self.nb_cases_visibles_camera: float = ZONE_VISIBLE_INITIALE
         self.cible_cases_visibles_camera: float = ZONE_VISIBLE_INITIALE
@@ -85,6 +157,15 @@ class GameEngine:
         self.numero_semaine: int = NUMERO_SEMAINE_INITIALE
         self.choix_hebdomadaire_actif: bool = False
         self.offres_hebdomadaires: list[dict[str, int | str]] = []
+
+    def verifier_et_sauvegarder_meilleur_score(self) -> None:
+        """Met à jour et sauvegarde le meilleur score si le record est battu."""
+        if self.score > self.meilleur_score_carte:
+            self.meilleur_score_carte = self.score
+            self.meilleurs_scores[self.nom_carte] = self.score
+            sauvegarder_meilleurs_scores(self.meilleurs_scores)
+        else:
+            pass
 
     def obtenir_nom_jour_courant(self) -> str:
         """Retourne le nom en français du jour de la semaine en cours.
@@ -602,6 +683,7 @@ class GameEngine:
             usine.mettre_a_jour_demandes()
             if usine.est_saturee():
                 self.partie_perdue = True
+                self.verifier_et_sauvegarder_meilleur_score()
             else:
                 pass
 
@@ -891,6 +973,7 @@ class GameEngine:
                         if voiture.usine_cible is not None:
                             voiture.usine_cible.enregistrer_livraison()
                             self.score = self.score + PAS_INCREMENT_COMPTEUR
+                            self.verifier_et_sauvegarder_meilleur_score()
                         else:
                             pass
                         voiture.entrer_a_l_usine()

@@ -12,9 +12,11 @@ from src.config import (
     BORDURE_BADGE_AUTOROUTE,
     BORDURE_CHAUSSEE,
     BORDURE_RELIEF_ORGANIQUE,
+    CARTES_CARROUSEL,
     CARTES_DISPONIBLES,
     CENTRE_BOUTON_RETOUR_X,
     CENTRE_BOUTON_RETOUR_Y,
+    CENTRE_CARROUSEL_Y,
     CENTRE_DOCK_X,
     CENTRE_DOCK_Y,
     CENTRE_EPINGLE_SCORE_X,
@@ -23,8 +25,11 @@ from src.config import (
     CENTRE_HORLOGE_HUD_Y,
     COEFFICIENT_PARABOLE_ARCHE,
     COMPTEUR_INITIAL_LIVRAISONS,
+    CONFIGURATIONS_CARTES,
     COORDONNEE_CAMERA_ORIGINE_FLOAT,
     COORDONNEE_ORIGINE,
+    COULEUR_ANNEAU_APERCU_CARTE,
+    COULEUR_ANNEAU_PASTILLE_ACTIVE,
     COULEUR_AUTOROUTE,
     COULEUR_BANDEAU_MODE_EDITION,
     COULEUR_BANDEAU_MODE_JEU,
@@ -35,9 +40,12 @@ from src.config import (
     COULEUR_BORDURE_ROUTE,
     COULEUR_BOUTON_CARTE,
     COULEUR_BOUTON_CARTE_SURVOL,
+    COULEUR_BOUTON_JOUER_MENU,
+    COULEUR_BOUTON_JOUER_SURVOL,
     COULEUR_CADRAN_HORLOGE,
     COULEUR_CENTRE_ROND_POINT,
     COULEUR_CONTOUR_BATIMENT,
+    COULEUR_CORPS_CARTE_MENU,
     COULEUR_CORPS_USINE,
     COULEUR_EAU,
     COULEUR_ENTREE_TUNNEL,
@@ -46,13 +54,16 @@ from src.config import (
     COULEUR_FOND,
     COULEUR_FOND_BANDEAU_SCORE,
     COULEUR_FOND_BOUTON_HUD,
+    COULEUR_FOND_MENU_CARROUSEL,
     COULEUR_FOND_PANNEAU_DEFAITE,
     COULEUR_GRILLE,
+    COULEUR_GRILLE_MENU_CARROUSEL,
     COULEUR_ICONE_HUD_SOMBRE,
     COULEUR_INDICATEUR_DEMANDE,
     COULEUR_LIGNE_PARKING_USINE,
     COULEUR_LOSANGE_ROUTES,
     COULEUR_MONTAGNE,
+    COULEUR_OMBRE_CARTE_MENU,
     COULEUR_OMBRE_PORTEE,
     COULEUR_OUTIL_ACTIF,
     COULEUR_PASTILLE_STOCK,
@@ -60,35 +71,50 @@ from src.config import (
     COULEUR_ROND_POINT,
     COULEUR_ROUTE,
     COULEUR_SECTEUR_HORLOGE,
+    COULEUR_SEPARATEUR_CARTE_MENU,
     COULEUR_SOCLE_MAISON,
     COULEUR_SOMMET_MONTAGNE,
     COULEUR_SOUS_TEXTE_DEFAITE,
+    COULEUR_TEXTE_BEST_MENU,
+    COULEUR_TEXTE_BOUTON_JOUER,
     COULEUR_TEXTE_DEFAITE,
+    COULEUR_TEXTE_DESCRIPTION_MENU,
     COULEUR_TEXTE_INTERFACE,
     COULEUR_TEXTE_LOSANGE_ROUTES,
     COULEUR_TEXTE_PASTILLE_STOCK,
+    COULEUR_TEXTE_TITRE_CARTE_MENU,
     COULEUR_TUNNEL,
     DECALAGE_AIDE_CARTE_OFFRE_Y,
     DECALAGE_BONUS_CARTE_OFFRE_Y,
+    DECALAGE_CARTE_LATERALE_X,
     DECALAGE_CARTES_MODALE_HEBDO_Y,
     DECALAGE_CENTRE_CASE,
     DECALAGE_CENTRE_HORLOGE_X,
     DECALAGE_COUVERCLE_CORBEILLE_Y,
+    DECALAGE_DESC_1_SOUS_BANDEAU_Y,
+    DECALAGE_DESC_2_SOUS_BANDEAU_Y,
     DECALAGE_OMBRE_AUTOROUTE_X,
     DECALAGE_OMBRE_AUTOROUTE_Y,
+    DECALAGE_OMBRE_CARTE_CENTRALE_Y,
+    DECALAGE_OMBRE_CARTE_LATERALE_Y,
     DECALAGE_OMBRE_X,
     DECALAGE_OMBRE_Y,
     DECALAGE_PASTILLE_STOCK_X,
     DECALAGE_PASTILLE_STOCK_Y,
+    DECALAGE_PASTILLES_SOUS_BANDEAU_Y,
     DECALAGE_ROUTES_CARTE_OFFRE_Y,
+    DECALAGE_SEPARATEUR_SOUS_BANDEAU_Y,
     DECALAGE_SOUS_TITRE_DEFAITE_Y,
     DECALAGE_SOUS_TITRE_MODALE_HEBDO_Y,
     DECALAGE_TEXTE_HORLOGE_X,
     DECALAGE_TITRE_CARTE_OFFRE_Y,
     DECALAGE_TITRE_DEFAITE_Y,
     DECALAGE_TITRE_MODALE_HEBDO_Y,
+    DECALAGE_TITRE_SOUS_BANDEAU_Y,
     DECALAGE_VOIE_DROITE_PIXELS,
+    DECALAGE_VOISIN_NEGATIF,
     DECALAGE_VOISIN_NUL,
+    DECALAGE_VOISIN_POSITIF,
     DECALAGE_VOYANT_FEU,
     DEMI_LARGEUR_POINTE_EPINGLE,
     DEMI_TAILLE_LOSANGE_ROUTES,
@@ -97,27 +123,37 @@ from src.config import (
     DIVISEUR_MOITIE,
     DIVISEUR_PARITE_USINE,
     EPAISSEUR_AIGUILLE_HORLOGE,
+    EPAISSEUR_ANNEAU_APERCU_MENU,
+    EPAISSEUR_ANNEAU_PASTILLE,
     EPAISSEUR_CONTOUR_INTERFACE,
     EPAISSEUR_CONTOUR_USINE,
     EPAISSEUR_FLECHE_RETOUR,
     EPAISSEUR_LIGNE_GRILLE,
     EPAISSEUR_LIGNE_PARKING,
+    EPAISSEUR_LIGNE_SEPARATEUR_MENU,
     ESPACEMENT_BOUTONS_CARTE_Y,
     ESPACEMENT_BOUTONS_DOCK_X,
     ESPACEMENT_BOUTONS_OUTIL_X,
     ESPACEMENT_CARTES_OFFRE_X,
     ESPACEMENT_INDICATEUR_DEMANDE,
+    ESPACEMENT_PASTILLES_THEME_X,
     ETAT_FEU_HORIZONTAL_VERT,
     FACTEUR_BEZIER_QUADRATIQUE,
     FACTEUR_DOUBLE_MARGE,
+    FACTEUR_ECHELLE_APERCU_TERRAIN,
     FACTEUR_ECHELLE_UNITE,
     HAUTEUR_ARCHE_AUTOROUTE,
+    HAUTEUR_BANDEAU_CARTE_CENTRALE,
+    HAUTEUR_BANDEAU_CARTE_LATERALE,
     HAUTEUR_BANDEAU_HORLOGE,
     HAUTEUR_BANDEAU_MODE,
     HAUTEUR_BANDEAU_ROUTES,
     HAUTEUR_BANDEAU_SCORE,
     HAUTEUR_BOUTON_CARTE,
+    HAUTEUR_BOUTON_JOUER_MENU,
     HAUTEUR_BOUTON_OUTIL,
+    HAUTEUR_CARTE_CENTRALE_MENU,
+    HAUTEUR_CARTE_LATERALE_MENU,
     HAUTEUR_CARTE_OFFRE_HEBDO,
     HAUTEUR_FENETRE,
     HAUTEUR_ICONE_CORBEILLE,
@@ -131,6 +167,9 @@ from src.config import (
     INDICE_DOCK_PONT_TUNNEL,
     INDICE_DOCK_ROND_POINT,
     INDICE_JOUR_LUNDI,
+    INDICE_PASTILLE_CENTRE,
+    INDICE_PASTILLE_DROITE,
+    INDICE_PASTILLE_GAUCHE,
     JOURS_SEMAINE,
     JOURS_SEMAINE_ABREGES,
     LARGEUR_ALLEE_MAISON,
@@ -140,7 +179,10 @@ from src.config import (
     LARGEUR_BANDEAU_ROUTES,
     LARGEUR_BANDEAU_SCORE,
     LARGEUR_BOUTON_CARTE,
+    LARGEUR_BOUTON_JOUER_MENU,
     LARGEUR_BOUTON_OUTIL,
+    LARGEUR_CARTE_CENTRALE_MENU,
+    LARGEUR_CARTE_LATERALE_MENU,
     LARGEUR_CARTE_OFFRE_HEBDO,
     LARGEUR_CHAUSSEE,
     LARGEUR_FENETRE,
@@ -154,6 +196,7 @@ from src.config import (
     LONGUEUR_ALLEE_MAISON,
     LONGUEUR_MINIMALE_ITINERAIRE,
     MARGE_INTERIEURE_DEMANDE,
+    MARGE_INTERIEURE_TEXTE_CARTE_X,
     MARGE_MAISON,
     MARGE_SOMMET_MONTAGNE,
     MARGE_TOIT_INTERIEUR_MAISON,
@@ -181,6 +224,7 @@ from src.config import (
     POSITION_BANDEAU_SCORE_Y,
     POSITION_BARRE_OUTILS_X,
     POSITION_BARRE_OUTILS_Y,
+    POSITION_BOUTON_JOUER_Y,
     POSITION_JOUR_HUD_X,
     POSITION_JOUR_HUD_Y,
     POSITION_PREMIER_BOUTON_CARTE_Y,
@@ -189,6 +233,9 @@ from src.config import (
     POSITION_SOUS_TITRE_ACCUEIL_Y,
     POSITION_TITRE_ACCUEIL_Y,
     PROGRESSION_MILIEU_COURBE,
+    RAYON_ANNEAU_PASTILLE_ACTIVE,
+    RAYON_APERCU_CARTE_CENTRALE,
+    RAYON_APERCU_CARTE_LATERALE,
     RAYON_BADGE_AUTOROUTE,
     RAYON_BORDURE_INTERFACE,
     RAYON_BORDURE_MAISON,
@@ -196,6 +243,8 @@ from src.config import (
     RAYON_BORDURE_USINE,
     RAYON_BOUTON_DOCK,
     RAYON_BOUTON_RETOUR,
+    RAYON_COIN_BOUTON_JOUER,
+    RAYON_COIN_CARTE_MENU,
     RAYON_CONTOUR_DEMANDE,
     RAYON_CONTOUR_VOITURE,
     RAYON_ENTREE_TUNNEL,
@@ -206,6 +255,7 @@ from src.config import (
     RAYON_INTERIEUR_ROND_POINT,
     RAYON_INTERIEUR_TUNNEL,
     RAYON_PASTILLE_STOCK_DOCK,
+    RAYON_PASTILLE_THEME_MENU,
     RAYON_PILIER_AUTOROUTE,
     RAYON_POINT_CENTRE_DEMANDE,
     RAYON_SOMMET_RELIEF,
@@ -213,10 +263,16 @@ from src.config import (
     RAYON_TROU_EPINGLE,
     RAYON_VOITURE,
     RAYON_VOYANT_FEU,
+    SCORE_INITIAL_DEFAUT,
     SEUIL_CRITIQUE_DEMANDES_USINE,
     TAILLE_CASE,
+    TAILLE_CASE_GRILLE_MENU,
     TAILLE_FLECHE_RETOUR,
+    TAILLE_POLICE_BEST_MENU,
+    TAILLE_POLICE_BOUTON_JOUER,
+    TAILLE_POLICE_DESCRIPTION_MENU,
     TAILLE_POLICE_JOUR_HUD,
+    TAILLE_POLICE_NOM_VILLE_MENU,
     TAILLE_POLICE_OUTIL,
     TAILLE_POLICE_PASTILLE_DOCK,
     TAILLE_POLICE_SCORE,
@@ -272,6 +328,23 @@ class Renderer:
             None,
             TAILLE_POLICE_PASTILLE_DOCK,
         )
+        self.police_nom_ville_menu: pygame.font.Font = pygame.font.SysFont(
+            None,
+            TAILLE_POLICE_NOM_VILLE_MENU,
+        )
+        self.police_best_menu: pygame.font.Font = pygame.font.SysFont(
+            None,
+            TAILLE_POLICE_BEST_MENU,
+        )
+        self.police_description_menu: pygame.font.Font = pygame.font.SysFont(
+            None,
+            TAILLE_POLICE_DESCRIPTION_MENU,
+        )
+        self.police_bouton_jouer: pygame.font.Font = pygame.font.SysFont(
+            None,
+            TAILLE_POLICE_BOUTON_JOUER,
+        )
+        self.grilles_apercu_cartes: dict[str, Grid] = {}
         self.nom_theme_actif: str = THEME_CREME_SAUGE
         self.couleur_fond_active: tuple[int, int, int] = COULEUR_FOND
         self.couleur_eau_active: tuple[int, int, int] = COULEUR_EAU
@@ -1991,6 +2064,633 @@ class Renderer:
             boutons.append((nom_carte, rectangle_bouton))
 
         return boutons
+
+    def obtenir_grille_apercu_carte(self, nom_carte: str) -> Grid:
+        """Retourne (et met en cache) une grille contenant le relief de la carte.
+
+        Args:
+            nom_carte: Nom de la carte ("Orléans", "Zurich", "Manila", "Rio...").
+
+        Returns:
+            Instance de Grid avec les obstacles naturels générés.
+        """
+        if nom_carte not in self.grilles_apercu_cartes:
+            grille_apercu: Grid = Grid()
+            grille_apercu.generer_relief_carte(nom_carte)
+            self.grilles_apercu_cartes[nom_carte] = grille_apercu
+        else:
+            pass
+        return self.grilles_apercu_cartes[nom_carte]
+
+    def obtenir_themes_disponibles_carte(
+        self,
+        nom_carte: str,
+    ) -> list[str]:
+        """Retourne la liste des 3 variantes de thème associées à une carte.
+
+        Args:
+            nom_carte: Nom de la carte interrogée.
+
+        Returns:
+            Liste des 3 noms de thèmes (Thème ville, Mode Nuit, Thème alternatif).
+        """
+        if nom_carte in CONFIGURATIONS_CARTES:
+            config_carte: dict[str, str | tuple[int, int, int]] = (
+                CONFIGURATIONS_CARTES[nom_carte]
+            )
+            return [
+                str(config_carte["theme_1"]),
+                str(config_carte["theme_2"]),
+                str(config_carte["theme_3"]),
+            ]
+        else:
+            return [
+                THEME_CREME_SAUGE,
+                THEME_CREME_SAUGE,
+                THEME_CREME_SAUGE,
+            ]
+
+    def obtenir_rectangle_carte_centrale_menu(self) -> pygame.Rect:
+        """Calcule le rectangle de la carte centrale mise en avant au menu.
+
+        Returns:
+            Un pygame.Rect centré horizontalement.
+        """
+        centre_ecran_x: int = LARGEUR_FENETRE // DIVISEUR_MOITIE
+        carte_x: int = (
+            centre_ecran_x - LARGEUR_CARTE_CENTRALE_MENU // DIVISEUR_MOITIE
+        )
+        carte_y: int = (
+            CENTRE_CARROUSEL_Y
+            - HAUTEUR_CARTE_CENTRALE_MENU // DIVISEUR_MOITIE
+        )
+        return pygame.Rect(
+            carte_x,
+            carte_y,
+            LARGEUR_CARTE_CENTRALE_MENU,
+            HAUTEUR_CARTE_CENTRALE_MENU,
+        )
+
+    def obtenir_rectangle_carte_gauche_menu(self) -> pygame.Rect:
+        """Calcule le rectangle de la carte latérale gauche du carrousel.
+
+        Returns:
+            Un pygame.Rect décalé vers la gauche de l'écran.
+        """
+        centre_ecran_x: int = LARGEUR_FENETRE // DIVISEUR_MOITIE
+        centre_gauche_x: int = centre_ecran_x - DECALAGE_CARTE_LATERALE_X
+        carte_x: int = (
+            centre_gauche_x - LARGEUR_CARTE_LATERALE_MENU // DIVISEUR_MOITIE
+        )
+        carte_y: int = (
+            CENTRE_CARROUSEL_Y
+            - HAUTEUR_CARTE_LATERALE_MENU // DIVISEUR_MOITIE
+        )
+        return pygame.Rect(
+            carte_x,
+            carte_y,
+            LARGEUR_CARTE_LATERALE_MENU,
+            HAUTEUR_CARTE_LATERALE_MENU,
+        )
+
+    def obtenir_rectangle_carte_droite_menu(self) -> pygame.Rect:
+        """Calcule le rectangle de la carte latérale droite du carrousel.
+
+        Returns:
+            Un pygame.Rect décalé vers la droite de l'écran.
+        """
+        centre_ecran_x: int = LARGEUR_FENETRE // DIVISEUR_MOITIE
+        centre_droite_x: int = centre_ecran_x + DECALAGE_CARTE_LATERALE_X
+        carte_x: int = (
+            centre_droite_x - LARGEUR_CARTE_LATERALE_MENU // DIVISEUR_MOITIE
+        )
+        carte_y: int = (
+            CENTRE_CARROUSEL_Y
+            - HAUTEUR_CARTE_LATERALE_MENU // DIVISEUR_MOITIE
+        )
+        return pygame.Rect(
+            carte_x,
+            carte_y,
+            LARGEUR_CARTE_LATERALE_MENU,
+            HAUTEUR_CARTE_LATERALE_MENU,
+        )
+
+    def obtenir_rectangle_bouton_jouer_menu(self) -> pygame.Rect:
+        """Calcule le rectangle du bouton Jouer sous la carte centrale.
+
+        Returns:
+            Un pygame.Rect centré sous la carte active.
+        """
+        centre_ecran_x: int = LARGEUR_FENETRE // DIVISEUR_MOITIE
+        bouton_x: int = (
+            centre_ecran_x - LARGEUR_BOUTON_JOUER_MENU // DIVISEUR_MOITIE
+        )
+        bouton_y: int = (
+            POSITION_BOUTON_JOUER_Y
+            - HAUTEUR_BOUTON_JOUER_MENU // DIVISEUR_MOITIE
+        )
+        return pygame.Rect(
+            bouton_x,
+            bouton_y,
+            LARGEUR_BOUTON_JOUER_MENU,
+            HAUTEUR_BOUTON_JOUER_MENU,
+        )
+
+    def obtenir_cercles_pastilles_theme_menu(
+        self,
+        nom_carte: str,
+        rectangle_carte: pygame.Rect,
+        hauteur_bandeau: int,
+    ) -> list[tuple[str, tuple[int, int], int]]:
+        """Retourne les 3 pastilles (nom_theme, centre_xy, rayon) d'une carte.
+
+        Args:
+            nom_carte: Nom de la carte affichée.
+            rectangle_carte: Rectangle global de la carte du carrousel.
+            hauteur_bandeau: Hauteur du bandeau coloré supérieur.
+
+        Returns:
+            Liste de tuples (nom_theme, (centre_x, centre_y), rayon).
+        """
+        themes_carte: list[str] = self.obtenir_themes_disponibles_carte(
+            nom_carte
+        )
+        positions_relatives: list[int] = [
+            INDICE_PASTILLE_GAUCHE,
+            INDICE_PASTILLE_CENTRE,
+            INDICE_PASTILLE_DROITE,
+        ]
+        centre_y: int = (
+            rectangle_carte.top
+            + hauteur_bandeau
+            + DECALAGE_PASTILLES_SOUS_BANDEAU_Y
+        )
+        pastilles: list[tuple[str, tuple[int, int], int]] = []
+
+        for indice_pastille, dec_rel in enumerate(positions_relatives):
+            if indice_pastille < len(themes_carte):
+                nom_theme: str = themes_carte[indice_pastille]
+            else:
+                nom_theme = THEME_CREME_SAUGE
+            centre_x: int = (
+                rectangle_carte.centerx
+                + dec_rel * ESPACEMENT_PASTILLES_THEME_X
+            )
+            pastilles.append(
+                (nom_theme, (centre_x, centre_y), RAYON_PASTILLE_THEME_MENU)
+            )
+        return pastilles
+
+    def dessiner_fond_menu_carrousel(self) -> None:
+        """Dessine le fond gris clair finement quadrillé du menu principal."""
+        self.ecran.fill(COULEUR_FOND_MENU_CARROUSEL)
+
+        nb_colonnes_menu: int = (
+            LARGEUR_FENETRE // TAILLE_CASE_GRILLE_MENU
+            + INCREMENT_BORNE_GRILLE
+        )
+        for indice_col in range(nb_colonnes_menu):
+            pos_x: int = indice_col * TAILLE_CASE_GRILLE_MENU
+            pygame.draw.line(
+                self.ecran,
+                COULEUR_GRILLE_MENU_CARROUSEL,
+                (pos_x, COORDONNEE_ORIGINE),
+                (pos_x, HAUTEUR_FENETRE),
+                EPAISSEUR_LIGNE_GRILLE,
+            )
+
+        nb_lignes_menu: int = (
+            HAUTEUR_FENETRE // TAILLE_CASE_GRILLE_MENU
+            + INCREMENT_BORNE_GRILLE
+        )
+        for indice_lig in range(nb_lignes_menu):
+            pos_y: int = indice_lig * TAILLE_CASE_GRILLE_MENU
+            pygame.draw.line(
+                self.ecran,
+                COULEUR_GRILLE_MENU_CARROUSEL,
+                (COORDONNEE_ORIGINE, pos_y),
+                (LARGEUR_FENETRE, pos_y),
+                EPAISSEUR_LIGNE_GRILLE,
+            )
+
+    def dessiner_apercu_circulaire_carte(
+        self,
+        nom_carte: str,
+        nom_theme: str,
+        centre_x: int,
+        centre_y: int,
+        rayon_cercle: int,
+    ) -> None:
+        """Dessine l'aperçu circulaire miniature du relief (eau et montagnes).
+
+        Args:
+            nom_carte: Nom de la carte à prévisualiser.
+            nom_theme: Nom du thème graphique choisi pour cette carte.
+            centre_x: Coordonnée X du centre de l'aperçu circulaire.
+            centre_y: Coordonnée Y du centre de l'aperçu circulaire.
+            rayon_cercle: Rayon en pixels du disque d'aperçu.
+        """
+        if nom_theme in THEMES_GRAPHIQUES:
+            palette: dict[str, tuple[int, int, int]] = (
+                THEMES_GRAPHIQUES[nom_theme]
+            )
+        else:
+            palette = THEMES_GRAPHIQUES[THEME_CREME_SAUGE]
+
+        couleur_fond_apercu: tuple[int, int, int] = palette["fond"]
+        couleur_eau_apercu: tuple[int, int, int] = palette["eau"]
+        couleur_montagne_apercu: tuple[int, int, int] = palette["montagne"]
+
+        pygame.draw.circle(
+            self.ecran,
+            couleur_fond_apercu,
+            (centre_x, centre_y),
+            rayon_cercle,
+        )
+
+        grille_apercu: Grid = self.obtenir_grille_apercu_carte(nom_carte)
+        diametre_utile: float = (
+            float(FACTEUR_DOUBLE_MARGE * rayon_cercle)
+            * FACTEUR_ECHELLE_APERCU_TERRAIN
+        )
+        pas_case: float = diametre_utile / float(grille_apercu.nb_colonnes)
+        rayon_point_case: int = int(round(pas_case))
+        if rayon_point_case < DIMENSION_PIXEL_MINIMALE:
+            rayon_point_case = DIMENSION_PIXEL_MINIMALE
+        else:
+            pass
+
+        demi_lignes: float = float(grille_apercu.nb_lignes) / float(
+            DIVISEUR_MOITIE
+        )
+        demi_colonnes: float = float(grille_apercu.nb_colonnes) / float(
+            DIVISEUR_MOITIE
+        )
+        rayon_interieur_max: float = float(
+            rayon_cercle - EPAISSEUR_ANNEAU_APERCU_MENU
+        )
+
+        for lig in range(grille_apercu.nb_lignes):
+            for col in range(grille_apercu.nb_colonnes):
+                est_eau: bool = grille_apercu.est_case_eau(lig, col)
+                est_montagne: bool = grille_apercu.est_case_montagne(
+                    lig,
+                    col,
+                )
+                if est_eau or est_montagne:
+                    dec_x: float = (
+                        float(col) + DECALAGE_CENTRE_CASE - demi_colonnes
+                    ) * pas_case
+                    dec_y: float = (
+                        float(lig) + DECALAGE_CENTRE_CASE - demi_lignes
+                    ) * pas_case
+                    distance_centre: float = math.hypot(dec_x, dec_y)
+                    if (
+                        distance_centre + float(rayon_point_case)
+                        <= rayon_interieur_max
+                    ):
+                        point_x: int = int(round(float(centre_x) + dec_x))
+                        point_y: int = int(round(float(centre_y) + dec_y))
+                        if est_eau:
+                            couleur_point: tuple[int, int, int] = (
+                                couleur_eau_apercu
+                            )
+                        else:
+                            couleur_point = couleur_montagne_apercu
+                        pygame.draw.circle(
+                            self.ecran,
+                            couleur_point,
+                            (point_x, point_y),
+                            rayon_point_case,
+                        )
+                    else:
+                        pass
+                else:
+                    pass
+
+        pygame.draw.circle(
+            self.ecran,
+            COULEUR_ANNEAU_APERCU_CARTE,
+            (centre_x, centre_y),
+            rayon_cercle,
+            width=EPAISSEUR_ANNEAU_APERCU_MENU,
+        )
+
+    def dessiner_carte_ville_carrousel(
+        self,
+        nom_carte: str,
+        nom_theme_actif: str,
+        meilleur_score: int,
+        rectangle_carte: pygame.Rect,
+        hauteur_bandeau: int,
+        rayon_apercu: int,
+        decalage_ombre_y: int,
+    ) -> None:
+        """Dessine une carte verticale de ville dans le carrousel du menu.
+
+        Args:
+            nom_carte: Nom de la ville ("Orléans", "Zurich", "Manila", "Rio...").
+            nom_theme_actif: Variante de thème sélectionnée pour cette carte.
+            meilleur_score: Meilleur score enregistré sur cette carte.
+            rectangle_carte: Rectangle de la carte à l'écran.
+            hauteur_bandeau: Hauteur du bandeau coloré supérieur.
+            rayon_apercu: Rayon de l'aperçu circulaire du terrain.
+            decalage_ombre_y: Décalage vertical de l'ombre portée.
+        """
+        rectangle_ombre: pygame.Rect = pygame.Rect(
+            rectangle_carte.left,
+            rectangle_carte.top + decalage_ombre_y,
+            rectangle_carte.width,
+            rectangle_carte.height,
+        )
+        pygame.draw.rect(
+            self.ecran,
+            COULEUR_OMBRE_CARTE_MENU,
+            rectangle_ombre,
+            border_radius=RAYON_COIN_CARTE_MENU,
+        )
+        pygame.draw.rect(
+            self.ecran,
+            COULEUR_CORPS_CARTE_MENU,
+            rectangle_carte,
+            border_radius=RAYON_COIN_CARTE_MENU,
+        )
+
+        if nom_carte in CONFIGURATIONS_CARTES:
+            config_carte: dict[str, str | tuple[int, int, int]] = (
+                CONFIGURATIONS_CARTES[nom_carte]
+            )
+            description_1: str = str(config_carte["description_ligne_1"])
+            description_2: str = str(config_carte["description_ligne_2"])
+        else:
+            description_1 = "Construisez et optimisez votre"
+            description_2 = "reseau routier urbain."
+
+        if nom_theme_actif in THEMES_GRAPHIQUES:
+            palette_active: dict[str, tuple[int, int, int]] = (
+                THEMES_GRAPHIQUES[nom_theme_actif]
+            )
+            if nom_theme_actif == THEME_CREME_SAUGE:
+                couleur_bandeau: tuple[int, int, int] = palette_active["eau"]
+            else:
+                couleur_bandeau = palette_active["fond"]
+        else:
+            couleur_bandeau = COULEUR_EAU
+
+        rectangle_bandeau: pygame.Rect = pygame.Rect(
+            rectangle_carte.left,
+            rectangle_carte.top,
+            rectangle_carte.width,
+            hauteur_bandeau,
+        )
+        pygame.draw.rect(
+            self.ecran,
+            couleur_bandeau,
+            rectangle_bandeau,
+            border_top_left_radius=RAYON_COIN_CARTE_MENU,
+            border_top_right_radius=RAYON_COIN_CARTE_MENU,
+        )
+
+        centre_apercu_x: int = rectangle_bandeau.centerx
+        centre_apercu_y: int = rectangle_bandeau.centery
+        self.dessiner_apercu_circulaire_carte(
+            nom_carte,
+            nom_theme_actif,
+            centre_apercu_x,
+            centre_apercu_y,
+            rayon_apercu,
+        )
+
+        pastilles: list[tuple[str, tuple[int, int], int]] = (
+            self.obtenir_cercles_pastilles_theme_menu(
+                nom_carte,
+                rectangle_carte,
+                hauteur_bandeau,
+            )
+        )
+        for theme_pastille, centre_pastille, rayon_pastille in pastilles:
+            if theme_pastille in THEMES_GRAPHIQUES:
+                palette_pastille: dict[str, tuple[int, int, int]] = (
+                    THEMES_GRAPHIQUES[theme_pastille]
+                )
+                if theme_pastille == THEME_CREME_SAUGE:
+                    couleur_pastille: tuple[int, int, int] = (
+                        palette_pastille["eau"]
+                    )
+                else:
+                    couleur_pastille = palette_pastille["fond"]
+            else:
+                couleur_pastille = COULEUR_EAU
+
+            pygame.draw.circle(
+                self.ecran,
+                couleur_pastille,
+                centre_pastille,
+                rayon_pastille,
+            )
+            if theme_pastille == nom_theme_actif:
+                pygame.draw.circle(
+                    self.ecran,
+                    COULEUR_ANNEAU_PASTILLE_ACTIVE,
+                    centre_pastille,
+                    RAYON_ANNEAU_PASTILLE_ACTIVE,
+                    width=EPAISSEUR_ANNEAU_PASTILLE,
+                )
+            else:
+                pass
+
+        marge_texte_gauche: int = (
+            rectangle_carte.left + MARGE_INTERIEURE_TEXTE_CARTE_X
+        )
+        marge_texte_droite: int = (
+            rectangle_carte.right - MARGE_INTERIEURE_TEXTE_CARTE_X
+        )
+        position_titre_y: int = (
+            rectangle_carte.top
+            + hauteur_bandeau
+            + DECALAGE_TITRE_SOUS_BANDEAU_Y
+        )
+
+        surface_nom_ville: pygame.Surface = (
+            self.police_nom_ville_menu.render(
+                nom_carte,
+                True,
+                COULEUR_TEXTE_TITRE_CARTE_MENU,
+            )
+        )
+        rectangle_nom_ville: pygame.Rect = surface_nom_ville.get_rect(
+            midleft=(marge_texte_gauche, position_titre_y)
+        )
+        self.ecran.blit(surface_nom_ville, rectangle_nom_ville)
+
+        surface_best: pygame.Surface = self.police_best_menu.render(
+            f"Best: {meilleur_score}",
+            True,
+            COULEUR_TEXTE_BEST_MENU,
+        )
+        rectangle_best: pygame.Rect = surface_best.get_rect(
+            midright=(marge_texte_droite, position_titre_y)
+        )
+        self.ecran.blit(surface_best, rectangle_best)
+
+        position_separateur_y: int = (
+            rectangle_carte.top
+            + hauteur_bandeau
+            + DECALAGE_SEPARATEUR_SOUS_BANDEAU_Y
+        )
+        pygame.draw.line(
+            self.ecran,
+            COULEUR_SEPARATEUR_CARTE_MENU,
+            (marge_texte_gauche, position_separateur_y),
+            (marge_texte_droite, position_separateur_y),
+            EPAISSEUR_LIGNE_SEPARATEUR_MENU,
+        )
+
+        position_desc_1_y: int = (
+            rectangle_carte.top
+            + hauteur_bandeau
+            + DECALAGE_DESC_1_SOUS_BANDEAU_Y
+        )
+        surface_desc_1: pygame.Surface = (
+            self.police_description_menu.render(
+                description_1,
+                True,
+                COULEUR_TEXTE_DESCRIPTION_MENU,
+            )
+        )
+        rectangle_desc_1: pygame.Rect = surface_desc_1.get_rect(
+            midleft=(marge_texte_gauche, position_desc_1_y)
+        )
+        self.ecran.blit(surface_desc_1, rectangle_desc_1)
+
+        position_desc_2_y: int = (
+            rectangle_carte.top
+            + hauteur_bandeau
+            + DECALAGE_DESC_2_SOUS_BANDEAU_Y
+        )
+        surface_desc_2: pygame.Surface = (
+            self.police_description_menu.render(
+                description_2,
+                True,
+                COULEUR_TEXTE_DESCRIPTION_MENU,
+            )
+        )
+        rectangle_desc_2: pygame.Rect = surface_desc_2.get_rect(
+            midleft=(marge_texte_gauche, position_desc_2_y)
+        )
+        self.ecran.blit(surface_desc_2, rectangle_desc_2)
+
+    def dessiner_menu_carrousel(
+        self,
+        indice_carte_active: int,
+        themes_par_carte: dict[str, str],
+        meilleurs_scores: dict[str, int],
+        position_souris: tuple[int, int],
+    ) -> None:
+        """Affiche le menu principal en carrousel façon Mini Motorways.
+
+        Args:
+            indice_carte_active: Indice de la carte sélectionnée au centre.
+            themes_par_carte: Variante de thème active pour chaque carte.
+            meilleurs_scores: Dictionnaire des meilleurs scores par carte.
+            position_souris: Position (x, y) actuelle du curseur souris.
+        """
+        self.dessiner_fond_menu_carrousel()
+        nb_cartes: int = len(CARTES_CARROUSEL)
+
+        indice_gauche: int = (
+            indice_carte_active + DECALAGE_VOISIN_NEGATIF
+        ) % nb_cartes
+        indice_droite: int = (
+            indice_carte_active + DECALAGE_VOISIN_POSITIF
+        ) % nb_cartes
+
+        nom_gauche: str = CARTES_CARROUSEL[indice_gauche]
+        theme_gauche: str = themes_par_carte.get(
+            nom_gauche,
+            THEME_PAR_CARTE.get(nom_gauche, THEME_CREME_SAUGE),
+        )
+        score_gauche: int = meilleurs_scores.get(
+            nom_gauche,
+            SCORE_INITIAL_DEFAUT,
+        )
+        self.dessiner_carte_ville_carrousel(
+            nom_gauche,
+            theme_gauche,
+            score_gauche,
+            self.obtenir_rectangle_carte_gauche_menu(),
+            HAUTEUR_BANDEAU_CARTE_LATERALE,
+            RAYON_APERCU_CARTE_LATERALE,
+            DECALAGE_OMBRE_CARTE_LATERALE_Y,
+        )
+
+        nom_droite: str = CARTES_CARROUSEL[indice_droite]
+        theme_droite: str = themes_par_carte.get(
+            nom_droite,
+            THEME_PAR_CARTE.get(nom_droite, THEME_CREME_SAUGE),
+        )
+        score_droite: int = meilleurs_scores.get(
+            nom_droite,
+            SCORE_INITIAL_DEFAUT,
+        )
+        self.dessiner_carte_ville_carrousel(
+            nom_droite,
+            theme_droite,
+            score_droite,
+            self.obtenir_rectangle_carte_droite_menu(),
+            HAUTEUR_BANDEAU_CARTE_LATERALE,
+            RAYON_APERCU_CARTE_LATERALE,
+            DECALAGE_OMBRE_CARTE_LATERALE_Y,
+        )
+
+        nom_centrale: str = CARTES_CARROUSEL[indice_carte_active]
+        theme_centrale: str = themes_par_carte.get(
+            nom_centrale,
+            THEME_PAR_CARTE.get(nom_centrale, THEME_CREME_SAUGE),
+        )
+        score_centrale: int = meilleurs_scores.get(
+            nom_centrale,
+            SCORE_INITIAL_DEFAUT,
+        )
+        self.dessiner_carte_ville_carrousel(
+            nom_centrale,
+            theme_centrale,
+            score_centrale,
+            self.obtenir_rectangle_carte_centrale_menu(),
+            HAUTEUR_BANDEAU_CARTE_CENTRALE,
+            RAYON_APERCU_CARTE_CENTRALE,
+            DECALAGE_OMBRE_CARTE_CENTRALE_Y,
+        )
+
+        self.dessiner_bouton_retour_hud()
+
+        rectangle_jouer: pygame.Rect = (
+            self.obtenir_rectangle_bouton_jouer_menu()
+        )
+        if rectangle_jouer.collidepoint(position_souris):
+            couleur_bouton_jouer: tuple[int, int, int] = (
+                COULEUR_BOUTON_JOUER_SURVOL
+            )
+        else:
+            couleur_bouton_jouer = COULEUR_BOUTON_JOUER_MENU
+
+        pygame.draw.rect(
+            self.ecran,
+            couleur_bouton_jouer,
+            rectangle_jouer,
+            border_radius=RAYON_COIN_BOUTON_JOUER,
+        )
+        surface_jouer: pygame.Surface = self.police_bouton_jouer.render(
+            "Jouer",
+            True,
+            COULEUR_TEXTE_BOUTON_JOUER,
+        )
+        rect_texte_jouer: pygame.Rect = surface_jouer.get_rect(
+            center=rectangle_jouer.center
+        )
+        self.ecran.blit(surface_jouer, rect_texte_jouer)
+
+        pygame.display.flip()
 
     def dessiner_ecran_selection_carte(
         self,

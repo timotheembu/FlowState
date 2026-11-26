@@ -39,10 +39,12 @@ COULEUR_SOMMET_MONTAGNE: tuple[int, int, int] = (232, 176, 138)
 MARGE_SOMMET_MONTAGNE: int = 6
 RAYON_BORDURE_MONTAGNE: int = 4
 
-# Thèmes graphiques complets inspirés de Mini Motorways (Étape 18)
+# Thèmes graphiques complets inspirés de Mini Motorways (Étapes 18 & 19)
 THEME_CREME_SAUGE: str = "Crème & Sauge"
 THEME_CORAIL_LAGON: str = "Corail & Lagon"
 THEME_MODE_NUIT: str = "Mode Nuit"
+THEME_BLEU_LAGON: str = "Bleu Lagon"
+THEME_VERT_MENTHE: str = "Vert Menthe"
 
 COULEUR_FOND_CREME_SAUGE: tuple[int, int, int] = (239, 232, 220)
 COULEUR_EAU_CREME_SAUGE: tuple[int, int, int] = (158, 204, 176)
@@ -70,6 +72,24 @@ COULEUR_BORDURE_RELIEF_MODE_NUIT: tuple[int, int, int] = (68, 76, 90)
 COULEUR_SOMMET_MODE_NUIT: tuple[int, int, int] = (46, 52, 64)
 COULEUR_GRILLE_MODE_NUIT: tuple[int, int, int] = (52, 58, 70)
 COULEUR_TEXTE_MODE_NUIT: tuple[int, int, int] = (235, 238, 245)
+
+COULEUR_FOND_BLEU_LAGON: tuple[int, int, int] = (242, 236, 224)
+COULEUR_EAU_BLEU_LAGON: tuple[int, int, int] = (116, 198, 216)
+COULEUR_BORDURE_EAU_BLEU_LAGON: tuple[int, int, int] = (156, 218, 232)
+COULEUR_RELIEF_BLEU_LAGON: tuple[int, int, int] = (228, 186, 152)
+COULEUR_BORDURE_RELIEF_BLEU_LAGON: tuple[int, int, int] = (242, 206, 176)
+COULEUR_SOMMET_BLEU_LAGON: tuple[int, int, int] = (210, 166, 132)
+COULEUR_GRILLE_BLEU_LAGON: tuple[int, int, int] = (226, 220, 208)
+COULEUR_TEXTE_BLEU_LAGON: tuple[int, int, int] = (45, 48, 56)
+
+COULEUR_FOND_VERT_MENTHE: tuple[int, int, int] = (214, 235, 222)
+COULEUR_EAU_VERT_MENTHE: tuple[int, int, int] = (118, 178, 212)
+COULEUR_BORDURE_EAU_VERT_MENTHE: tuple[int, int, int] = (154, 202, 228)
+COULEUR_RELIEF_VERT_MENTHE: tuple[int, int, int] = (146, 198, 170)
+COULEUR_BORDURE_RELIEF_VERT_MENTHE: tuple[int, int, int] = (172, 216, 192)
+COULEUR_SOMMET_VERT_MENTHE: tuple[int, int, int] = (124, 178, 150)
+COULEUR_GRILLE_VERT_MENTHE: tuple[int, int, int] = (198, 220, 206)
+COULEUR_TEXTE_VERT_MENTHE: tuple[int, int, int] = (42, 52, 48)
 
 THEMES_GRAPHIQUES: dict[str, dict[str, tuple[int, int, int]]] = {
     THEME_CREME_SAUGE: {
@@ -101,6 +121,26 @@ THEMES_GRAPHIQUES: dict[str, dict[str, tuple[int, int, int]]] = {
         "sommet_montagne": COULEUR_SOMMET_MODE_NUIT,
         "grille": COULEUR_GRILLE_MODE_NUIT,
         "texte_hud": COULEUR_TEXTE_MODE_NUIT,
+    },
+    THEME_BLEU_LAGON: {
+        "fond": COULEUR_FOND_BLEU_LAGON,
+        "eau": COULEUR_EAU_BLEU_LAGON,
+        "bordure_eau": COULEUR_BORDURE_EAU_BLEU_LAGON,
+        "montagne": COULEUR_RELIEF_BLEU_LAGON,
+        "bordure_montagne": COULEUR_BORDURE_RELIEF_BLEU_LAGON,
+        "sommet_montagne": COULEUR_SOMMET_BLEU_LAGON,
+        "grille": COULEUR_GRILLE_BLEU_LAGON,
+        "texte_hud": COULEUR_TEXTE_BLEU_LAGON,
+    },
+    THEME_VERT_MENTHE: {
+        "fond": COULEUR_FOND_VERT_MENTHE,
+        "eau": COULEUR_EAU_VERT_MENTHE,
+        "bordure_eau": COULEUR_BORDURE_EAU_VERT_MENTHE,
+        "montagne": COULEUR_RELIEF_VERT_MENTHE,
+        "bordure_montagne": COULEUR_BORDURE_RELIEF_VERT_MENTHE,
+        "sommet_montagne": COULEUR_SOMMET_VERT_MENTHE,
+        "grille": COULEUR_GRILLE_VERT_MENTHE,
+        "texte_hud": COULEUR_TEXTE_VERT_MENTHE,
     },
 }
 
@@ -285,10 +325,21 @@ COORDONNEE_CAMERA_ORIGINE_FLOAT: float = 0.0
 CARTE_PLAINE: str = "Plaine"
 CARTE_RIVIERE: str = "Rivière"
 CARTE_MONTAGNES: str = "Montagnes"
+CARTE_ORLEANS: str = "Orléans"
+CARTE_ZURICH: str = "Zurich"
+CARTE_MANILA: str = "Manila"
+CARTE_RIO: str = "Rio de Janeiro"
+CARTES_CARROUSEL: list[str] = [
+    CARTE_ORLEANS,
+    CARTE_ZURICH,
+    CARTE_MANILA,
+    CARTE_RIO,
+]
 CARTES_DISPONIBLES: list[str] = [
-    CARTE_PLAINE,
-    CARTE_RIVIERE,
-    CARTE_MONTAGNES,
+    CARTE_ORLEANS,
+    CARTE_ZURICH,
+    CARTE_MANILA,
+    CARTE_RIO,
 ]
 RAYON_ZONE_CENTRALE_DEGAGEE: int = 3
 COLONNE_BASE_RIVIERE: int = 19
@@ -303,6 +354,38 @@ MASSIFS_MONTAGNEUX_DEFAUT: list[tuple[int, int, int]] = [
     (21, 7, 3),
     (22, 21, 3),
     (14, 24, 2),
+]
+
+# Paramètres de relief spécifiques aux 4 villes du carrousel (Étape 19)
+COLONNE_DEPART_LOIRE_ORLEANS: int = 24
+PENTE_DIAGONALE_LOIRE_ORLEANS: float = 0.55
+AMPLITUDE_LOIRE_ORLEANS: float = 1.2
+FREQUENCE_LOIRE_ORLEANS: float = 0.3
+MASSIFS_ZURICH: list[tuple[int, int, int]] = [
+    (6, 7, 3),
+    (6, 23, 3),
+    (23, 8, 3),
+    (24, 22, 3),
+]
+LIGNE_BASE_MANILA: int = 18
+AMPLITUDE_SINUS_MANILA: float = 1.8
+FREQUENCE_SINUS_MANILA: float = 0.28
+LARGEUR_BRAS_MER_MANILA: int = 3
+COLONNE_GUE_MANILA_MIN: int = 14
+COLONNE_GUE_MANILA_MAX: int = 16
+ILOTS_MANILA: list[tuple[int, int, int]] = [
+    (7, 22, 2),
+    (24, 8, 2),
+]
+COLONNE_COTE_RIO_BASE: int = 22
+AMPLITUDE_BAIE_RIO: float = 2.8
+FREQUENCE_BAIE_RIO: float = 0.22
+LIGNE_BAIE_SUD_RIO: int = 23
+MASSIFS_RIO: list[tuple[int, int, int]] = [
+    (7, 7, 3),
+    (15, 6, 3),
+    (22, 10, 2),
+    (8, 17, 2),
 ]
 
 # Paramètres de l'écran d'accueil de sélection de carte
@@ -460,12 +543,122 @@ POSITION_BANDEAU_MODE_Y: int = 66
 LARGEUR_BANDEAU_MODE: int = 240
 HAUTEUR_BANDEAU_MODE: int = 38
 
-# Association des cartes aux thèmes graphiques (Étape 18)
+# Association des cartes aux thèmes graphiques (Étapes 18 & 19)
 THEME_PAR_CARTE: dict[str, str] = {
     CARTE_PLAINE: THEME_CREME_SAUGE,
     CARTE_RIVIERE: THEME_CREME_SAUGE,
     CARTE_MONTAGNES: THEME_CORAIL_LAGON,
+    CARTE_ORLEANS: THEME_CREME_SAUGE,
+    CARTE_ZURICH: THEME_CORAIL_LAGON,
+    CARTE_MANILA: THEME_BLEU_LAGON,
+    CARTE_RIO: THEME_VERT_MENTHE,
 }
+
+# Configuration détaillée des cartes pour le menu carrousel (Étape 19)
+CHEMIN_FICHIER_SCORES: str = "scores.json"
+SCORE_INITIAL_DEFAUT: int = 0
+CONFIGURATIONS_CARTES: dict[str, dict[str, str | tuple[int, int, int]]] = {
+    CARTE_ORLEANS: {
+        "nom": CARTE_ORLEANS,
+        "description_ligne_1": "La Loire traverse paisiblement",
+        "description_ligne_2": "la plaine royale en diagonale.",
+        "couleur_bandeau": (158, 204, 176),
+        "theme_defaut": THEME_CREME_SAUGE,
+        "theme_1": THEME_CREME_SAUGE,
+        "theme_2": THEME_MODE_NUIT,
+        "theme_3": THEME_CORAIL_LAGON,
+    },
+    CARTE_ZURICH: {
+        "nom": CARTE_ZURICH,
+        "description_ligne_1": "La Limmat serpente au coeur",
+        "description_ligne_2": "des massifs montagneux alpins.",
+        "couleur_bandeau": (232, 118, 118),
+        "theme_defaut": THEME_CORAIL_LAGON,
+        "theme_1": THEME_CORAIL_LAGON,
+        "theme_2": THEME_MODE_NUIT,
+        "theme_3": THEME_CREME_SAUGE,
+    },
+    CARTE_MANILA: {
+        "nom": CARTE_MANILA,
+        "description_ligne_1": "Un large bras de mer separe",
+        "description_ligne_2": "deux rives ponctuees de collines.",
+        "couleur_bandeau": (116, 198, 216),
+        "theme_defaut": THEME_BLEU_LAGON,
+        "theme_1": THEME_BLEU_LAGON,
+        "theme_2": THEME_MODE_NUIT,
+        "theme_3": THEME_CREME_SAUGE,
+    },
+    CARTE_RIO: {
+        "nom": CARTE_RIO,
+        "description_ligne_1": "Construisez entre les plages",
+        "description_ligne_2": "et les reliefs escarpes de Rio.",
+        "couleur_bandeau": (146, 198, 170),
+        "theme_defaut": THEME_VERT_MENTHE,
+        "theme_1": THEME_VERT_MENTHE,
+        "theme_2": THEME_MODE_NUIT,
+        "theme_3": THEME_CREME_SAUGE,
+    },
+}
+
+# Paramètres de mise en page du menu carrousel Mini Motorways (Étape 19)
+COULEUR_FOND_MENU_CARROUSEL: tuple[int, int, int] = (244, 244, 244)
+COULEUR_GRILLE_MENU_CARROUSEL: tuple[int, int, int] = (232, 232, 232)
+TAILLE_CASE_GRILLE_MENU: int = 24
+COULEUR_CORPS_CARTE_MENU: tuple[int, int, int] = (252, 252, 252)
+COULEUR_OMBRE_CARTE_MENU: tuple[int, int, int] = (214, 214, 218)
+COULEUR_SEPARATEUR_CARTE_MENU: tuple[int, int, int] = (224, 224, 228)
+COULEUR_TEXTE_TITRE_CARTE_MENU: tuple[int, int, int] = (48, 52, 60)
+COULEUR_TEXTE_DESCRIPTION_MENU: tuple[int, int, int] = (118, 122, 130)
+COULEUR_TEXTE_BEST_MENU: tuple[int, int, int] = (88, 92, 100)
+COULEUR_ANNEAU_PASTILLE_ACTIVE: tuple[int, int, int] = (48, 52, 60)
+COULEUR_ANNEAU_APERCU_CARTE: tuple[int, int, int] = (252, 252, 252)
+COULEUR_BOUTON_JOUER_MENU: tuple[int, int, int] = (52, 56, 64)
+COULEUR_BOUTON_JOUER_SURVOL: tuple[int, int, int] = (74, 80, 92)
+COULEUR_TEXTE_BOUTON_JOUER: tuple[int, int, int] = (250, 248, 242)
+
+LARGEUR_CARTE_CENTRALE_MENU: int = 410
+HAUTEUR_CARTE_CENTRALE_MENU: int = 560
+HAUTEUR_BANDEAU_CARTE_CENTRALE: int = 275
+RAYON_APERCU_CARTE_CENTRALE: int = 104
+
+LARGEUR_CARTE_LATERALE_MENU: int = 360
+HAUTEUR_CARTE_LATERALE_MENU: int = 500
+HAUTEUR_BANDEAU_CARTE_LATERALE: int = 245
+RAYON_APERCU_CARTE_LATERALE: int = 90
+
+CENTRE_CARROUSEL_Y: int = 475
+DECALAGE_CARTE_LATERALE_X: int = 445
+RAYON_COIN_CARTE_MENU: int = 16
+DECALAGE_OMBRE_CARTE_CENTRALE_Y: int = 14
+DECALAGE_OMBRE_CARTE_LATERALE_Y: int = 10
+EPAISSEUR_ANNEAU_APERCU_MENU: int = 4
+FACTEUR_ECHELLE_APERCU_TERRAIN: float = 0.85
+
+NB_PASTILLES_THEME_CARTE: int = 3
+INDICE_PASTILLE_GAUCHE: int = -1
+INDICE_PASTILLE_CENTRE: int = 0
+INDICE_PASTILLE_DROITE: int = 1
+RAYON_PASTILLE_THEME_MENU: int = 13
+RAYON_ANNEAU_PASTILLE_ACTIVE: int = 17
+EPAISSEUR_ANNEAU_PASTILLE: int = 2
+ESPACEMENT_PASTILLES_THEME_X: int = 38
+DECALAGE_PASTILLES_SOUS_BANDEAU_Y: int = 30
+DECALAGE_TITRE_SOUS_BANDEAU_Y: int = 86
+DECALAGE_SEPARATEUR_SOUS_BANDEAU_Y: int = 114
+DECALAGE_DESC_1_SOUS_BANDEAU_Y: int = 148
+DECALAGE_DESC_2_SOUS_BANDEAU_Y: int = 178
+MARGE_INTERIEURE_TEXTE_CARTE_X: int = 34
+EPAISSEUR_LIGNE_SEPARATEUR_MENU: int = 2
+
+LARGEUR_BOUTON_JOUER_MENU: int = 220
+HAUTEUR_BOUTON_JOUER_MENU: int = 54
+POSITION_BOUTON_JOUER_Y: int = 865
+RAYON_COIN_BOUTON_JOUER: int = 27
+TAILLE_POLICE_NOM_VILLE_MENU: int = 38
+TAILLE_POLICE_BEST_MENU: int = 26
+TAILLE_POLICE_DESCRIPTION_MENU: int = 22
+TAILLE_POLICE_BOUTON_JOUER: int = 30
+PAS_DEFILEMENT_CARROUSEL: int = 1
 
 # Paramètres esthétiques : ombres portées, reliefs organiques et bâtiments
 COULEUR_OMBRE_PORTEE: tuple[int, int, int] = (28, 30, 36)
