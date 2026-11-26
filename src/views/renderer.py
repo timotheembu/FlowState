@@ -4,17 +4,23 @@ import pygame
 
 from src.config import (
     BORDURE_CHAUSSEE,
+    CARTES_DISPONIBLES,
     COMPTEUR_INITIAL_LIVRAISONS,
     COORDONNEE_CAMERA_ORIGINE_FLOAT,
     COORDONNEE_ORIGINE,
     COULEUR_BORDURE_ROUTE,
+    COULEUR_BOUTON_CARTE,
+    COULEUR_BOUTON_CARTE_SURVOL,
     COULEUR_CONTOUR_BATIMENT,
+    COULEUR_EAU,
     COULEUR_FOND,
     COULEUR_FOND_BANDEAU_SCORE,
     COULEUR_FOND_PANNEAU_DEFAITE,
     COULEUR_GRILLE,
     COULEUR_INDICATEUR_DEMANDE,
+    COULEUR_MONTAGNE,
     COULEUR_ROUTE,
+    COULEUR_SOMMET_MONTAGNE,
     COULEUR_SOUS_TEXTE_DEFAITE,
     COULEUR_TEXTE_DEFAITE,
     COULEUR_TEXTE_INTERFACE,
@@ -23,34 +29,41 @@ from src.config import (
     DECALAGE_TITRE_DEFAITE_Y,
     DECALAGE_VOIE_DROITE_PIXELS,
     DIMENSION_PIXEL_MINIMALE,
-    DIRECTIONS_HUIT_VOISINS,
     DIVISEUR_MOITIE,
     EPAISSEUR_CONTOUR_INTERFACE,
     EPAISSEUR_CONTOUR_USINE,
     EPAISSEUR_LIGNE_GRILLE,
+    ESPACEMENT_BOUTONS_CARTE_Y,
     ESPACEMENT_INDICATEUR_DEMANDE,
     FACTEUR_DOUBLE_MARGE,
     FACTEUR_ECHELLE_UNITE,
     HAUTEUR_BANDEAU_ROUTES,
     HAUTEUR_BANDEAU_SCORE,
+    HAUTEUR_BOUTON_CARTE,
     HAUTEUR_FENETRE,
     HAUTEUR_PANNEAU_DEFAITE,
     INCREMENT_BORNE_GRILLE,
     LARGEUR_BANDEAU_ROUTES,
     LARGEUR_BANDEAU_SCORE,
+    LARGEUR_BOUTON_CARTE,
     LARGEUR_CHAUSSEE,
     LARGEUR_FENETRE,
     LARGEUR_PANNEAU_DEFAITE,
     MARGE_INTERIEURE_DEMANDE,
     MARGE_MAISON,
+    MARGE_SOMMET_MONTAGNE,
     MARGE_USINE,
     NB_COLONNES_GRILLE_DEMANDES,
     POSITION_BANDEAU_ROUTES_X,
     POSITION_BANDEAU_ROUTES_Y,
     POSITION_BANDEAU_SCORE_X,
     POSITION_BANDEAU_SCORE_Y,
+    POSITION_PREMIER_BOUTON_CARTE_Y,
+    POSITION_SOUS_TITRE_ACCUEIL_Y,
+    POSITION_TITRE_ACCUEIL_Y,
     RAYON_BORDURE_INTERFACE,
     RAYON_BORDURE_MAISON,
+    RAYON_BORDURE_MONTAGNE,
     RAYON_BORDURE_USINE,
     RAYON_CONTOUR_DEMANDE,
     RAYON_CONTOUR_VOITURE,
@@ -61,6 +74,7 @@ from src.config import (
     TAILLE_POLICE_SCORE,
     TAILLE_POLICE_SOUS_TITRE_DEFAITE,
     TAILLE_POLICE_TITRE_DEFAITE,
+    TITRE_FENETRE,
 )
 from src.models.entity import Maison, Usine, Voiture
 from src.models.grid import Grid
@@ -142,6 +156,108 @@ class Renderer:
     def dessiner_fond(self) -> None:
         """Remplit l'écran avec la couleur de fond."""
         self.ecran.fill(COULEUR_FOND)
+
+    def dessiner_obstacles_naturels(
+        self,
+        grille: Grid,
+        colonne_debut_camera: float,
+        ligne_debut_camera: float,
+        taille_case_camera: float,
+        facteur_zoom: float,
+    ) -> None:
+        """Dessine les cases d'eau (CASE_EAU) et de montagne (CASE_MONTAGNE).
+
+        Args:
+            grille: Instance du modèle Grid à parcourir.
+            colonne_debut_camera: Colonne du bord gauche de la caméra.
+            ligne_debut_camera: Ligne du bord supérieur de la caméra.
+            taille_case_camera: Taille d'une case en pixels écran.
+            facteur_zoom: Facteur d'échelle actuel.
+        """
+        marge_sommet_zoom: int = self.mettre_a_echelle(
+            MARGE_SOMMET_MONTAGNE,
+            facteur_zoom,
+        )
+        rayon_montagne_zoom: int = self.mettre_a_echelle(
+            RAYON_BORDURE_MONTAGNE,
+            facteur_zoom,
+        )
+
+        for indice_ligne in range(grille.nb_lignes):
+            for indice_colonne in range(grille.nb_colonnes):
+                est_eau: bool = grille.est_case_eau(
+                    indice_ligne,
+                    indice_colonne,
+                )
+                est_montagne: bool = grille.est_case_montagne(
+                    indice_ligne,
+                    indice_colonne,
+                )
+                if est_eau or est_montagne:
+                    case_x, case_y = self.convertir_monde_en_ecran(
+                        float(indice_colonne),
+                        float(indice_ligne),
+                        colonne_debut_camera,
+                        ligne_debut_camera,
+                        taille_case_camera,
+                    )
+                    suiv_x, suiv_y = self.convertir_monde_en_ecran(
+                        float(indice_colonne + INCREMENT_BORNE_GRILLE),
+                        float(indice_ligne + INCREMENT_BORNE_GRILLE),
+                        colonne_debut_camera,
+                        ligne_debut_camera,
+                        taille_case_camera,
+                    )
+                    largeur_case_px: int = suiv_x - case_x
+                    hauteur_case_px: int = suiv_y - case_y
+                    rectangle_case: pygame.Rect = pygame.Rect(
+                        case_x,
+                        case_y,
+                        largeur_case_px,
+                        hauteur_case_px,
+                    )
+
+                    if est_eau:
+                        pygame.draw.rect(
+                            self.ecran,
+                            COULEUR_EAU,
+                            rectangle_case,
+                        )
+                    else:
+                        pygame.draw.rect(
+                            self.ecran,
+                            COULEUR_MONTAGNE,
+                            rectangle_case,
+                            border_radius=rayon_montagne_zoom,
+                        )
+                        largeur_sommet: int = (
+                            largeur_case_px
+                            - FACTEUR_DOUBLE_MARGE * marge_sommet_zoom
+                        )
+                        hauteur_sommet: int = (
+                            hauteur_case_px
+                            - FACTEUR_DOUBLE_MARGE * marge_sommet_zoom
+                        )
+                        if (
+                            largeur_sommet > DIMENSION_PIXEL_MINIMALE
+                            and hauteur_sommet > DIMENSION_PIXEL_MINIMALE
+                        ):
+                            rectangle_sommet: pygame.Rect = pygame.Rect(
+                                case_x + marge_sommet_zoom,
+                                case_y + marge_sommet_zoom,
+                                largeur_sommet,
+                                hauteur_sommet,
+                            )
+                            pygame.draw.rect(
+                                self.ecran,
+                                COULEUR_SOMMET_MONTAGNE,
+                                rectangle_sommet,
+                                border_radius=rayon_montagne_zoom,
+                            )
+                        else:
+                            pass
+                else:
+                    pass
 
     def dessiner_grille(
         self,
@@ -763,6 +879,107 @@ class Renderer:
         )
         self.ecran.blit(surface_score_final, rectangle_score_final)
 
+    def obtenir_rectangles_boutons_cartes(
+        self,
+    ) -> list[tuple[str, pygame.Rect]]:
+        """Retourne les rectangles cliquables de sélection de carte à l'accueil.
+
+        Returns:
+            Liste de tuples (nom_carte, rectangle_bouton).
+        """
+        centre_ecran_x: int = LARGEUR_FENETRE // DIVISEUR_MOITIE
+        bouton_x: int = (
+            centre_ecran_x - LARGEUR_BOUTON_CARTE // DIVISEUR_MOITIE
+        )
+        boutons: list[tuple[str, pygame.Rect]] = []
+
+        for indice_carte, nom_carte in enumerate(CARTES_DISPONIBLES):
+            bouton_y: int = (
+                POSITION_PREMIER_BOUTON_CARTE_Y
+                + indice_carte * ESPACEMENT_BOUTONS_CARTE_Y
+            )
+            rectangle_bouton: pygame.Rect = pygame.Rect(
+                bouton_x,
+                bouton_y,
+                LARGEUR_BOUTON_CARTE,
+                HAUTEUR_BOUTON_CARTE,
+            )
+            boutons.append((nom_carte, rectangle_bouton))
+
+        return boutons
+
+    def dessiner_ecran_selection_carte(
+        self,
+        position_souris: tuple[int, int],
+    ) -> None:
+        """Affiche l'écran d'accueil permettant de choisir la carte de départ.
+
+        Args:
+            position_souris: Coordonnée actuelle (x, y) du curseur souris.
+        """
+        self.dessiner_fond()
+        centre_ecran_x: int = LARGEUR_FENETRE // DIVISEUR_MOITIE
+
+        surface_titre: pygame.Surface = self.police_titre_defaite.render(
+            TITRE_FENETRE,
+            True,
+            COULEUR_TEXTE_INTERFACE,
+        )
+        rectangle_titre: pygame.Rect = surface_titre.get_rect(
+            center=(centre_ecran_x, POSITION_TITRE_ACCUEIL_Y)
+        )
+        self.ecran.blit(surface_titre, rectangle_titre)
+
+        surface_sous_titre: pygame.Surface = (
+            self.police_sous_titre_defaite.render(
+                "Choisissez une carte pour commencer",
+                True,
+                COULEUR_TEXTE_INTERFACE,
+            )
+        )
+        rectangle_sous_titre: pygame.Rect = surface_sous_titre.get_rect(
+            center=(centre_ecran_x, POSITION_SOUS_TITRE_ACCUEIL_Y)
+        )
+        self.ecran.blit(surface_sous_titre, rectangle_sous_titre)
+
+        boutons_cartes: list[tuple[str, pygame.Rect]] = (
+            self.obtenir_rectangles_boutons_cartes()
+        )
+        for nom_carte, rectangle_bouton in boutons_cartes:
+            if rectangle_bouton.collidepoint(position_souris):
+                couleur_fond_bouton: tuple[int, int, int] = (
+                    COULEUR_BOUTON_CARTE_SURVOL
+                )
+            else:
+                couleur_fond_bouton = COULEUR_BOUTON_CARTE
+
+            pygame.draw.rect(
+                self.ecran,
+                couleur_fond_bouton,
+                rectangle_bouton,
+                border_radius=RAYON_BORDURE_INTERFACE,
+            )
+            pygame.draw.rect(
+                self.ecran,
+                COULEUR_CONTOUR_BATIMENT,
+                rectangle_bouton,
+                width=EPAISSEUR_CONTOUR_INTERFACE,
+                border_radius=RAYON_BORDURE_INTERFACE,
+            )
+            surface_nom_carte: pygame.Surface = (
+                self.police_sous_titre_defaite.render(
+                    f"Carte : {nom_carte}",
+                    True,
+                    COULEUR_TEXTE_INTERFACE,
+                )
+            )
+            rectangle_texte: pygame.Rect = surface_nom_carte.get_rect(
+                center=rectangle_bouton.center
+            )
+            self.ecran.blit(surface_nom_carte, rectangle_texte)
+
+        pygame.display.flip()
+
     def afficher(
         self,
         grille: Grid,
@@ -795,6 +1012,13 @@ class Renderer:
             facteur_zoom = FACTEUR_ECHELLE_UNITE
 
         self.dessiner_fond()
+        self.dessiner_obstacles_naturels(
+            grille,
+            colonne_debut_cam,
+            ligne_debut_cam,
+            taille_case_cam,
+            facteur_zoom,
+        )
         self.dessiner_grille(
             grille,
             colonne_debut_cam,

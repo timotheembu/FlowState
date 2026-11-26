@@ -20,12 +20,19 @@ CASE_VIDE: int = 0
 CASE_MAISON: int = 1
 CASE_USINE: int = 2
 CASE_ROUTE: int = 3
+CASE_EAU: int = 4
+CASE_MONTAGNE: int = 5
 
 # Couleurs de l'environnement (R, G, B)
 COULEUR_FOND: tuple[int, int, int] = (245, 242, 235)
 COULEUR_GRILLE: tuple[int, int, int] = (220, 216, 208)
 COULEUR_ROUTE: tuple[int, int, int] = (85, 85, 90)
 COULEUR_BORDURE_ROUTE: tuple[int, int, int] = (55, 55, 60)
+COULEUR_EAU: tuple[int, int, int] = (116, 185, 235)
+COULEUR_MONTAGNE: tuple[int, int, int] = (145, 138, 128)
+COULEUR_SOMMET_MONTAGNE: tuple[int, int, int] = (195, 190, 182)
+MARGE_SOMMET_MONTAGNE: int = 6
+RAYON_BORDURE_MONTAGNE: int = 4
 
 # Palette de couleurs des entités (R, G, B)
 COULEUR_ROUGE: tuple[int, int, int] = (229, 75, 75)
@@ -201,3 +208,37 @@ VITESSE_INTERPOLATION_CAMERA: float = 0.03
 FACTEUR_ECHELLE_UNITE: float = 1.0
 DIMENSION_PIXEL_MINIMALE: int = 1
 COORDONNEE_CAMERA_ORIGINE_FLOAT: float = 0.0
+
+# Cartes prédéfinies et paramètres de génération du relief naturel
+CARTE_PLAINE: str = "Plaine"
+CARTE_RIVIERE: str = "Rivière"
+CARTE_MONTAGNES: str = "Montagnes"
+CARTES_DISPONIBLES: list[str] = [
+    CARTE_PLAINE,
+    CARTE_RIVIERE,
+    CARTE_MONTAGNES,
+]
+RAYON_ZONE_CENTRALE_DEGAGEE: int = 3
+COLONNE_BASE_RIVIERE: int = 19
+AMPLITUDE_SINUS_RIVIERE: float = 2.5
+FREQUENCE_SINUS_RIVIERE: float = 0.35
+LARGEUR_RIVIERE_CASES: int = 2
+LIGNE_GUE_RIVIERE_MIN: int = 14
+LIGNE_GUE_RIVIERE_MAX: int = 16
+MASSIFS_MONTAGNEUX_DEFAUT: list[tuple[int, int, int]] = [
+    (7, 8, 3),
+    (8, 22, 3),
+    (21, 7, 3),
+    (22, 21, 3),
+    (14, 24, 2),
+]
+
+# Paramètres de l'écran d'accueil de sélection de carte
+LARGEUR_BOUTON_CARTE: int = 340
+HAUTEUR_BOUTON_CARTE: int = 64
+ESPACEMENT_BOUTONS_CARTE_Y: int = 90
+POSITION_PREMIER_BOUTON_CARTE_Y: int = 420
+POSITION_TITRE_ACCUEIL_Y: int = 240
+POSITION_SOUS_TITRE_ACCUEIL_Y: int = 310
+COULEUR_BOUTON_CARTE: tuple[int, int, int] = (235, 230, 220)
+COULEUR_BOUTON_CARTE_SURVOL: tuple[int, int, int] = (215, 210, 198)

@@ -1,26 +1,39 @@
 """Modèle de la grille spatiale (logique métier pure sans Pygame)."""
 
-from math import hypot
+from math import hypot, sin
 
 from src.config import (
+    AMPLITUDE_SINUS_RIVIERE,
+    CARTE_MONTAGNES,
+    CARTE_PLAINE,
+    CARTE_RIVIERE,
+    CASE_EAU,
     CASE_MAISON,
+    CASE_MONTAGNE,
     CASE_ROUTE,
     CASE_USINE,
     CASE_VIDE,
+    COLONNE_BASE_RIVIERE,
     COMPTEUR_INITIAL_FRAMES,
     DIRECTIONS_HUIT_VOISINS,
     DISTANCE_CHEBYSHEV_ADJACENTE,
     DISTANCE_MIN_ENTRE_BATIMENTS,
     DISTANCE_MIN_SECOURS_BATIMENT,
     DIVISEUR_MOITIE,
+    FREQUENCE_SINUS_RIVIERE,
     INDICE_MINIMUM_GRILLE,
+    LARGEUR_RIVIERE_CASES,
+    LIGNE_GUE_RIVIERE_MAX,
+    LIGNE_GUE_RIVIERE_MIN,
     LONGUEUR_LISTE_VIDE,
     MARGE_BORDURE_APPARITION,
     MARGE_BORDURE_NULLE,
+    MASSIFS_MONTAGNEUX_DEFAUT,
     NB_COLONNES,
     NB_LIGNES,
     NB_MAX_ROUTES_ADJACENTES_MAISON,
     PAS_INCREMENT_COMPTEUR,
+    RAYON_ZONE_CENTRALE_DEGAGEE,
     STOCK_ROUTES_EPUISE,
     STOCK_ROUTES_INITIAL,
     UNITE_STOCK_ROUTE,
@@ -218,6 +231,9 @@ class Grid:
     def est_case_libre(self, ligne: int, colonne: int) -> bool:
         """Vérifie si une case est dans les limites et actuellement vide.
 
+        Une case contenant un obstacle naturel (CASE_EAU ou CASE_MONTAGNE),
+        un bâtiment ou une route n'est pas libre.
+
         Args:
             ligne: Indice de la ligne.
             colonne: Indice de la colonne.
@@ -233,6 +249,193 @@ class Grid:
                 return False
         else:
             return False
+
+    def est_case_eau(self, ligne: int, colonne: int) -> bool:
+        """Vérifie si une case est valide et contient de l'eau (CASE_EAU).
+
+        Args:
+            ligne: Indice de la ligne.
+            colonne: Indice de la colonne.
+
+        Returns:
+            True si la case est valide et égale à CASE_EAU, False sinon.
+        """
+        if self.est_coordonnee_valide(ligne, colonne):
+            etat_actuel: int = self.matrice[ligne][colonne]
+            if etat_actuel == CASE_EAU:
+                return True
+            else:
+                return False
+        else:
+            return False
+
+    def est_case_montagne(self, ligne: int, colonne: int) -> bool:
+        """Vérifie si une case est valide et contient une montagne.
+
+        Args:
+            ligne: Indice de la ligne.
+            colonne: Indice de la colonne.
+
+        Returns:
+            True si la case est valide et égale à CASE_MONTAGNE, False sinon.
+        """
+        if self.est_coordonnee_valide(ligne, colonne):
+            etat_actuel: int = self.matrice[ligne][colonne]
+            if etat_actuel == CASE_MONTAGNE:
+                return True
+            else:
+                return False
+        else:
+            return False
+
+    def est_obstacle_naturel(self, ligne: int, colonne: int) -> bool:
+        """Indique si la case contient un obstacle naturel (eau ou montagne).
+
+        Args:
+            ligne: Indice de la ligne.
+            colonne: Indice de la colonne.
+
+        Returns:
+            True si la case est CASE_EAU ou CASE_MONTAGNE, False sinon.
+        """
+        if self.est_case_eau(ligne, colonne):
+            return True
+        else:
+            if self.est_case_montagne(ligne, colonne):
+                return True
+            else:
+                return False
+
+    def a_voisin_libre_pour_sortie(self, ligne: int, colonne: int) -> bool:
+        """Vérifie qu'une case possède au moins un voisin vide (CASE_VIDE).
+
+        Empêche un bâtiment d'apparaître encerclé d'obstacles naturels sans
+        pouvoir poser son bout de route (case_sortie).
+
+        Args:
+            ligne: Indice de la ligne candidate.
+            colonne: Indice de la colonne candidate.
+
+        Returns:
+            True si au moins l'un des 8 voisins est CASE_VIDE, False sinon.
+        """
+        for delta_colonne, delta_ligne in DIRECTIONS_HUIT_VOISINS:
+            voisin_ligne: int = ligne + delta_ligne
+            voisin_colonne: int = colonne + delta_colonne
+            if self.est_case_libre(voisin_ligne, voisin_colonne):
+                return True
+            else:
+                pass
+        return False
+
+    def est_dans_zone_centrale_degagee(
+        self,
+        ligne: int,
+        colonne: int,
+    ) -> bool:
+        """Vérifie si une case appartient au cœur central réservé au départ.
+
+        Args:
+            ligne: Indice de la ligne.
+            colonne: Indice de la colonne.
+
+        Returns:
+            True si la case est dans le rayon central dégagé, False sinon.
+        """
+        centre_ligne: int = self.nb_lignes // DIVISEUR_MOITIE
+        centre_colonne: int = self.nb_colonnes // DIVISEUR_MOITIE
+        ecart_ligne: int = abs(ligne - centre_ligne)
+        ecart_colonne: int = abs(colonne - centre_colonne)
+        dans_zone: bool = (
+            ecart_ligne <= RAYON_ZONE_CENTRALE_DEGAGEE
+            and ecart_colonne <= RAYON_ZONE_CENTRALE_DEGAGEE
+        )
+        if dans_zone:
+            return True
+        else:
+            return False
+
+    def generer_riviere_sinueuse(self) -> None:
+        """Trace une rivière sinueuse en CASE_EAU en préservant un gué central."""
+        for indice_ligne in range(self.nb_lignes):
+            est_dans_gue: bool = (
+                LIGNE_GUE_RIVIERE_MIN
+                <= indice_ligne
+                <= LIGNE_GUE_RIVIERE_MAX
+            )
+            if est_dans_gue:
+                continue
+            else:
+                pass
+
+            decalage_sinus: float = (
+                sin(float(indice_ligne) * FREQUENCE_SINUS_RIVIERE)
+                * AMPLITUDE_SINUS_RIVIERE
+            )
+            colonne_centrale: int = int(
+                round(float(COLONNE_BASE_RIVIERE) + decalage_sinus)
+            )
+            for decalage_largeur in range(LARGEUR_RIVIERE_CASES):
+                colonne_eau: int = colonne_centrale + decalage_largeur
+                if self.est_case_libre(indice_ligne, colonne_eau):
+                    if not self.est_dans_zone_centrale_degagee(
+                        indice_ligne,
+                        colonne_eau,
+                    ):
+                        self.definir_etat_case(
+                            indice_ligne,
+                            colonne_eau,
+                            CASE_EAU,
+                        )
+                    else:
+                        pass
+                else:
+                    pass
+
+    def generer_massifs_montagneux(self) -> None:
+        """Place des amas de CASE_MONTAGNE autour de la vallée centrale."""
+        for ligne_centre, colonne_centre, rayon in MASSIFS_MONTAGNEUX_DEFAUT:
+            for indice_ligne in range(self.nb_lignes):
+                for indice_colonne in range(self.nb_colonnes):
+                    distance: float = hypot(
+                        float(indice_ligne - ligne_centre),
+                        float(indice_colonne - colonne_centre),
+                    )
+                    if distance <= float(rayon):
+                        if self.est_case_libre(indice_ligne, indice_colonne):
+                            if not self.est_dans_zone_centrale_degagee(
+                                indice_ligne,
+                                indice_colonne,
+                            ):
+                                self.definir_etat_case(
+                                    indice_ligne,
+                                    indice_colonne,
+                                    CASE_MONTAGNE,
+                                )
+                            else:
+                                pass
+                        else:
+                            pass
+                    else:
+                        pass
+
+    def generer_relief_carte(
+        self,
+        nom_carte: str = CARTE_PLAINE,
+    ) -> None:
+        """Réinitialise la grille et génère le relief de la carte choisie.
+
+        Args:
+            nom_carte: Nom de la carte ("Plaine", "Rivière", "Montagnes").
+        """
+        self.reinitialiser()
+        if nom_carte == CARTE_RIVIERE:
+            self.generer_riviere_sinueuse()
+        else:
+            if nom_carte == CARTE_MONTAGNES:
+                self.generer_massifs_montagneux()
+            else:
+                pass
 
     def obtenir_maison_a_coordonnee(
         self,
@@ -1607,14 +1810,20 @@ class Grid:
         for indice_ligne in range(ligne_debut, ligne_fin):
             for indice_colonne in range(colonne_debut, colonne_fin):
                 if self.est_case_libre(indice_ligne, indice_colonne):
-                    if self.est_eloignee_des_batiments(
+                    if self.a_voisin_libre_pour_sortie(
                         indice_ligne,
                         indice_colonne,
-                        marge_batiments,
                     ):
-                        cases_eligibles.append(
-                            (indice_ligne, indice_colonne)
-                        )
+                        if self.est_eloignee_des_batiments(
+                            indice_ligne,
+                            indice_colonne,
+                            marge_batiments,
+                        ):
+                            cases_eligibles.append(
+                                (indice_ligne, indice_colonne)
+                            )
+                        else:
+                            pass
                     else:
                         pass
                 else:
@@ -1756,23 +1965,29 @@ class Grid:
         for indice_ligne in range(ligne_min, ligne_max):
             for indice_colonne in range(colonne_min, colonne_max):
                 if self.est_case_libre(indice_ligne, indice_colonne):
-                    if self.est_eloignee_des_batiments(
+                    if self.a_voisin_libre_pour_sortie(
                         indice_ligne,
                         indice_colonne,
-                        distance_minimale,
                     ):
-                        cases_dans_zone.append(
-                            (indice_ligne, indice_colonne)
-                        )
-                        if self.est_a_proximite_batiment_reference(
+                        if self.est_eloignee_des_batiments(
                             indice_ligne,
                             indice_colonne,
-                            distance_maximale,
-                            couleur_cible,
+                            distance_minimale,
                         ):
-                            cases_proches_dans_zone.append(
+                            cases_dans_zone.append(
                                 (indice_ligne, indice_colonne)
                             )
+                            if self.est_a_proximite_batiment_reference(
+                                indice_ligne,
+                                indice_colonne,
+                                distance_maximale,
+                                couleur_cible,
+                            ):
+                                cases_proches_dans_zone.append(
+                                    (indice_ligne, indice_colonne)
+                                )
+                            else:
+                                pass
                         else:
                             pass
                     else:
