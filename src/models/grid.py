@@ -10,13 +10,17 @@ from src.config import (
     CASE_EAU,
     CASE_MAISON,
     CASE_MONTAGNE,
+    CASE_PONT,
+    CASE_ROND_POINT,
     CASE_ROUTE,
+    CASE_TUNNEL,
     CASE_USINE,
     CASE_VIDE,
     COLONNE_BASE_RIVIERE,
     COMPTEUR_INITIAL_FRAMES,
     DIRECTIONS_HUIT_VOISINS,
     DISTANCE_CHEBYSHEV_ADJACENTE,
+    DISTANCE_MIN_AUTOROUTE_CASES,
     DISTANCE_MIN_ENTRE_BATIMENTS,
     DISTANCE_MIN_SECOURS_BATIMENT,
     DIVISEUR_MOITIE,
@@ -34,11 +38,16 @@ from src.config import (
     NB_MAX_ROUTES_ADJACENTES_MAISON,
     PAS_INCREMENT_COMPTEUR,
     RAYON_ZONE_CENTRALE_DEGAGEE,
+    STOCK_AUTOROUTES_INITIAL,
+    STOCK_FEUX_INITIAL,
+    STOCK_PONTS_INITIAL,
+    STOCK_RONDS_POINTS_INITIAL,
     STOCK_ROUTES_EPUISE,
     STOCK_ROUTES_INITIAL,
+    STOCK_TUNNELS_INITIAL,
     UNITE_STOCK_ROUTE,
 )
-from src.models.entity import Maison, Usine
+from src.models.entity import FeuCirculation, Maison, Usine
 
 
 class Grid:
@@ -61,10 +70,18 @@ class Grid:
         self.nb_colonnes: int = nb_colonnes
         self.stock_routes_initial: int = stock_routes_initial
         self.stock_routes: int = stock_routes_initial
+        self.stock_ponts: int = STOCK_PONTS_INITIAL
+        self.stock_tunnels: int = STOCK_TUNNELS_INITIAL
+        self.stock_feux: int = STOCK_FEUX_INITIAL
+        self.stock_ronds_points: int = STOCK_RONDS_POINTS_INITIAL
+        self.stock_autoroutes: int = STOCK_AUTOROUTES_INITIAL
         self.matrice: list[list[int]] = []
         self.maisons: list[Maison] = []
         self.usines: list[Usine] = []
         self.connexions: dict[tuple[int, int], set[tuple[int, int]]] = {}
+        self.terrains_origine: dict[tuple[int, int], int] = {}
+        self.feux_circulation: dict[tuple[int, int], FeuCirculation] = {}
+        self.autoroutes: list[tuple[tuple[int, int], tuple[int, int]]] = []
         self.reinitialiser()
 
     def reinitialiser(self) -> None:
@@ -79,7 +96,15 @@ class Grid:
         self.maisons = []
         self.usines = []
         self.connexions = {}
+        self.terrains_origine = {}
+        self.feux_circulation = {}
+        self.autoroutes = []
         self.stock_routes = self.stock_routes_initial
+        self.stock_ponts = STOCK_PONTS_INITIAL
+        self.stock_tunnels = STOCK_TUNNELS_INITIAL
+        self.stock_feux = STOCK_FEUX_INITIAL
+        self.stock_ronds_points = STOCK_RONDS_POINTS_INITIAL
+        self.stock_autoroutes = STOCK_AUTOROUTES_INITIAL
 
     def obtenir_voisins_connectes(
         self,
@@ -1163,18 +1188,82 @@ class Grid:
             return False
 
     def est_case_route(self, ligne: int, colonne: int) -> bool:
-        """Vérifie si une case est valide et contient un segment de route.
+        """Vérifie si une case est valide et contient une voie routière.
+
+        Inclut CASE_ROUTE, CASE_PONT, CASE_TUNNEL et CASE_ROND_POINT afin
+        que toutes les infrastructures routières soient praticables et
+        connectables dans le réseau.
 
         Args:
             ligne: Indice de la ligne.
             colonne: Indice de la colonne.
 
         Returns:
-            True si la case est valide et égale à CASE_ROUTE, False sinon.
+            True si la case est une voie routière, False sinon.
         """
         if self.est_coordonnee_valide(ligne, colonne):
             etat_actuel: int = self.matrice[ligne][colonne]
-            if etat_actuel == CASE_ROUTE:
+            est_voie: bool = (
+                etat_actuel == CASE_ROUTE
+                or etat_actuel == CASE_PONT
+                or etat_actuel == CASE_TUNNEL
+                or etat_actuel == CASE_ROND_POINT
+            )
+            if est_voie:
+                return True
+            else:
+                return False
+        else:
+            return False
+
+    def est_case_pont(self, ligne: int, colonne: int) -> bool:
+        """Vérifie si une case contient un pont (CASE_PONT).
+
+        Args:
+            ligne: Indice de la ligne.
+            colonne: Indice de la colonne.
+
+        Returns:
+            True si la case est valide et égale à CASE_PONT, False sinon.
+        """
+        if self.est_coordonnee_valide(ligne, colonne):
+            if self.matrice[ligne][colonne] == CASE_PONT:
+                return True
+            else:
+                return False
+        else:
+            return False
+
+    def est_case_tunnel(self, ligne: int, colonne: int) -> bool:
+        """Vérifie si une case contient un tunnel (CASE_TUNNEL).
+
+        Args:
+            ligne: Indice de la ligne.
+            colonne: Indice de la colonne.
+
+        Returns:
+            True si la case est valide et égale à CASE_TUNNEL, False sinon.
+        """
+        if self.est_coordonnee_valide(ligne, colonne):
+            if self.matrice[ligne][colonne] == CASE_TUNNEL:
+                return True
+            else:
+                return False
+        else:
+            return False
+
+    def est_case_rond_point(self, ligne: int, colonne: int) -> bool:
+        """Vérifie si une case contient un rond-point (CASE_ROND_POINT).
+
+        Args:
+            ligne: Indice de la ligne.
+            colonne: Indice de la colonne.
+
+        Returns:
+            True si la case est valide et égale à CASE_ROND_POINT, False sinon.
+        """
+        if self.est_coordonnee_valide(ligne, colonne):
+            if self.matrice[ligne][colonne] == CASE_ROND_POINT:
                 return True
             else:
                 return False
@@ -1189,13 +1278,13 @@ class Grid:
             colonne: Indice de la colonne.
 
         Returns:
-            True si la case contient une route, une maison ou une usine,
-            False sinon.
+            True si la case contient une voie routière, une maison ou une
+            usine, False sinon.
         """
         if self.est_coordonnee_valide(ligne, colonne):
             etat_actuel: int = self.matrice[ligne][colonne]
             est_connectable: bool = (
-                etat_actuel == CASE_ROUTE
+                self.est_case_route(ligne, colonne)
                 or etat_actuel == CASE_MAISON
                 or etat_actuel == CASE_USINE
             )
@@ -1410,7 +1499,8 @@ class Grid:
         etat_a: int = self.matrice[ligne_a][colonne_a]
         etat_b: int = self.matrice[ligne_b][colonne_b]
         au_moins_une_route: bool = (
-            etat_a == CASE_ROUTE or etat_b == CASE_ROUTE
+            self.est_case_route(ligne_a, colonne_a)
+            or self.est_case_route(ligne_b, colonne_b)
         )
         if not au_moins_une_route:
             return False
@@ -1518,30 +1608,431 @@ class Grid:
         else:
             return False
 
-    def supprimer_route(self, ligne: int, colonne: int) -> bool:
-        """Supprime un segment de route et retire ses arêtes dans connexions.
+    def placer_pont(self, ligne: int, colonne: int) -> bool:
+        """Place un pont (CASE_PONT) sur une case d'eau si le stock le permet.
 
-        Refuse la suppression du bout de route obligatoire (case_sortie)
-        d'une Maison ou d'une Usine.
+        Mémorise CASE_EAU dans self.terrains_origine pour la restaurer lors
+        d'une suppression.
 
         Args:
-            ligne: Indice de la ligne où supprimer la route.
-            colonne: Indice de la colonne où supprimer la route.
+            ligne: Indice de la ligne d'eau.
+            colonne: Indice de la colonne d'eau.
 
         Returns:
-            True si une route a été supprimée, False sinon.
+            True si le pont a été posé, False sinon.
         """
-        if self.est_case_route(ligne, colonne):
-            if self.est_case_sortie_de_batiment(ligne, colonne):
-                return False
-            else:
-                coordonnee_col_lig: tuple[int, int] = (colonne, ligne)
-                self.retirer_toutes_connexions_case(coordonnee_col_lig)
-                self.definir_etat_case(ligne, colonne, CASE_VIDE)
-                self.stock_routes = self.stock_routes + UNITE_STOCK_ROUTE
-                return True
+        stock_disponible: bool = self.stock_ponts > STOCK_ROUTES_EPUISE
+        if stock_disponible and self.est_case_eau(ligne, colonne):
+            self.terrains_origine[(ligne, colonne)] = CASE_EAU
+            self.definir_etat_case(ligne, colonne, CASE_PONT)
+            self.stock_ponts = self.stock_ponts - UNITE_STOCK_ROUTE
+            return True
         else:
             return False
+
+    def placer_tunnel(self, ligne: int, colonne: int) -> bool:
+        """Place un tunnel (CASE_TUNNEL) sous une montagne si le stock le permet.
+
+        Mémorise CASE_MONTAGNE dans self.terrains_origine pour la restaurer
+        lors d'une suppression.
+
+        Args:
+            ligne: Indice de la ligne de montagne.
+            colonne: Indice de la colonne de montagne.
+
+        Returns:
+            True si le tunnel a été posé, False sinon.
+        """
+        stock_disponible: bool = self.stock_tunnels > STOCK_ROUTES_EPUISE
+        if stock_disponible and self.est_case_montagne(ligne, colonne):
+            self.terrains_origine[(ligne, colonne)] = CASE_MONTAGNE
+            self.definir_etat_case(ligne, colonne, CASE_TUNNEL)
+            self.stock_tunnels = self.stock_tunnels - UNITE_STOCK_ROUTE
+            return True
+        else:
+            return False
+
+    def placer_voie_automatique(self, ligne: int, colonne: int) -> bool:
+        """Pose automatiquement une route, un pont (sur eau) ou un tunnel.
+
+        Args:
+            ligne: Indice de la ligne cible.
+            colonne: Indice de la colonne cible.
+
+        Returns:
+            True si une infrastructure routière a été posée, False sinon.
+        """
+        if self.est_case_libre(ligne, colonne):
+            return self.placer_route(ligne, colonne)
+        else:
+            if self.est_case_eau(ligne, colonne):
+                return self.placer_pont(ligne, colonne)
+            else:
+                if self.est_case_montagne(ligne, colonne):
+                    return self.placer_tunnel(ligne, colonne)
+                else:
+                    return False
+
+    def obtenir_feu_circulation(
+        self,
+        ligne: int,
+        colonne: int,
+    ) -> FeuCirculation | None:
+        """Retourne le feu de circulation présent en (ligne, colonne) ou None.
+
+        Args:
+            ligne: Indice de la ligne.
+            colonne: Indice de la colonne.
+
+        Returns:
+            Instance de FeuCirculation ou None.
+        """
+        coordonnee_lig_col: tuple[int, int] = (ligne, colonne)
+        if coordonnee_lig_col in self.feux_circulation:
+            return self.feux_circulation[coordonnee_lig_col]
+        else:
+            return None
+
+    def placer_feu_circulation(self, ligne: int, colonne: int) -> bool:
+        """Place un feu de circulation sur une case de route existante.
+
+        Args:
+            ligne: Indice de la ligne de la route.
+            colonne: Indice de la colonne de la route.
+
+        Returns:
+            True si le feu a été installé, False sinon.
+        """
+        if self.stock_feux <= STOCK_ROUTES_EPUISE:
+            return False
+        else:
+            pass
+
+        if not self.est_case_route(ligne, colonne):
+            return False
+        else:
+            pass
+
+        if self.est_case_rond_point(ligne, colonne):
+            return False
+        else:
+            pass
+
+        coordonnee_lig_col: tuple[int, int] = (ligne, colonne)
+        if coordonnee_lig_col in self.feux_circulation:
+            return False
+        else:
+            self.feux_circulation[coordonnee_lig_col] = FeuCirculation(
+                ligne,
+                colonne,
+            )
+            self.stock_feux = self.stock_feux - UNITE_STOCK_ROUTE
+            return True
+
+    def supprimer_feu_circulation(self, ligne: int, colonne: int) -> bool:
+        """Retire un feu de circulation et rembourse le stock de feux.
+
+        Args:
+            ligne: Indice de la ligne.
+            colonne: Indice de la colonne.
+
+        Returns:
+            True si un feu a été retiré, False sinon.
+        """
+        coordonnee_lig_col: tuple[int, int] = (ligne, colonne)
+        if coordonnee_lig_col in self.feux_circulation:
+            del self.feux_circulation[coordonnee_lig_col]
+            self.stock_feux = self.stock_feux + UNITE_STOCK_ROUTE
+            return True
+        else:
+            return False
+
+    def placer_rond_point(self, ligne: int, colonne: int) -> bool:
+        """Installe un CASE_ROND_POINT sur une route ou une case libre.
+
+        Connecte automatiquement le rond-point aux voies routières adjacentes
+        déjà présentes pour fluidifier le carrefour.
+
+        Args:
+            ligne: Indice de la ligne.
+            colonne: Indice de la colonne.
+
+        Returns:
+            True si le rond-point a été posé, False sinon.
+        """
+        if self.stock_ronds_points <= STOCK_ROUTES_EPUISE:
+            return False
+        else:
+            pass
+
+        if not self.est_coordonnee_valide(ligne, colonne):
+            return False
+        else:
+            pass
+
+        if self.est_case_rond_point(ligne, colonne):
+            return False
+        else:
+            pass
+
+        etat_actuel: int = self.matrice[ligne][colonne]
+        est_emplacement_valide: bool = (
+            etat_actuel == CASE_ROUTE or etat_actuel == CASE_VIDE
+        )
+        if not est_emplacement_valide:
+            return False
+        else:
+            pass
+
+        if (ligne, colonne) in self.feux_circulation:
+            self.supprimer_feu_circulation(ligne, colonne)
+        else:
+            pass
+
+        self.definir_etat_case(ligne, colonne, CASE_ROND_POINT)
+        self.stock_ronds_points = (
+            self.stock_ronds_points - UNITE_STOCK_ROUTE
+        )
+
+        coordonnee_centre: tuple[int, int] = (colonne, ligne)
+        for delta_colonne, delta_ligne in DIRECTIONS_HUIT_VOISINS:
+            voisin_ligne: int = ligne + delta_ligne
+            voisin_colonne: int = colonne + delta_colonne
+            if self.est_case_route(voisin_ligne, voisin_colonne):
+                self.connecter_cases(
+                    coordonnee_centre,
+                    (voisin_colonne, voisin_ligne),
+                )
+            else:
+                pass
+
+        return True
+
+    def supprimer_rond_point(self, ligne: int, colonne: int) -> bool:
+        """Convertit un CASE_ROND_POINT en CASE_ROUTE et rembourse le bonus.
+
+        Args:
+            ligne: Indice de la ligne.
+            colonne: Indice de la colonne.
+
+        Returns:
+            True si un rond-point a été retiré, False sinon.
+        """
+        if self.est_case_rond_point(ligne, colonne):
+            self.definir_etat_case(ligne, colonne, CASE_ROUTE)
+            self.stock_ronds_points = (
+                self.stock_ronds_points + UNITE_STOCK_ROUTE
+            )
+            return True
+        else:
+            return False
+
+    def sont_reliees_par_autoroute(
+        self,
+        case_a: tuple[int, int],
+        case_b: tuple[int, int],
+    ) -> bool:
+        """Vérifie si une autoroute relie directement case_a et case_b.
+
+        Args:
+            case_a: Coordonnée (colonne, ligne) de la première extrémité.
+            case_b: Coordonnée (colonne, ligne) de la seconde extrémité.
+
+        Returns:
+            True si une autoroute relie ces deux cases, False sinon.
+        """
+        for extremite_1, extremite_2 in self.autoroutes:
+            sens_direct: bool = (
+                extremite_1 == case_a and extremite_2 == case_b
+            )
+            sens_inverse: bool = (
+                extremite_1 == case_b and extremite_2 == case_a
+            )
+            if sens_direct or sens_inverse:
+                return True
+            else:
+                pass
+        return False
+
+    def obtenir_voisins_autoroute(
+        self,
+        coordonnee: tuple[int, int],
+    ) -> list[tuple[int, int]]:
+        """Retourne les extrémités d'autoroute reliées à coordonnee (col, lig).
+
+        Args:
+            coordonnee: Coordonnée (colonne, ligne) à inspecter.
+
+        Returns:
+            Liste des coordonnées (colonne, ligne) atteignables par autoroute.
+        """
+        voisins_autoroute: list[tuple[int, int]] = []
+        for extremite_1, extremite_2 in self.autoroutes:
+            if extremite_1 == coordonnee:
+                voisins_autoroute.append(extremite_2)
+            else:
+                if extremite_2 == coordonnee:
+                    voisins_autoroute.append(extremite_1)
+                else:
+                    pass
+        return voisins_autoroute
+
+    def placer_autoroute(
+        self,
+        case_a: tuple[int, int],
+        case_b: tuple[int, int],
+    ) -> bool:
+        """Crée une liaison d'autoroute directe entre deux cases de route.
+
+        Args:
+            case_a: Coordonnée (colonne, ligne) de la première extrémité.
+            case_b: Coordonnée (colonne, ligne) de la seconde extrémité.
+
+        Returns:
+            True si l'autoroute a été créée, False sinon.
+        """
+        if self.stock_autoroutes <= STOCK_ROUTES_EPUISE:
+            return False
+        else:
+            pass
+
+        colonne_a, ligne_a = case_a
+        colonne_b, ligne_b = case_b
+        if not (
+            self.est_case_route(ligne_a, colonne_a)
+            and self.est_case_route(ligne_b, colonne_b)
+        ):
+            return False
+        else:
+            pass
+
+        ecart_colonne: int = abs(colonne_a - colonne_b)
+        ecart_ligne: int = abs(ligne_a - ligne_b)
+        if ecart_colonne > ecart_ligne:
+            distance_max: int = ecart_colonne
+        else:
+            distance_max = ecart_ligne
+
+        if distance_max < DISTANCE_MIN_AUTOROUTE_CASES:
+            return False
+        else:
+            pass
+
+        if self.sont_reliees_par_autoroute(case_a, case_b):
+            return False
+        else:
+            self.autoroutes.append((case_a, case_b))
+            self.stock_autoroutes = (
+                self.stock_autoroutes - UNITE_STOCK_ROUTE
+            )
+            return True
+
+    def supprimer_autoroute_en_case(
+        self,
+        ligne: int,
+        colonne: int,
+    ) -> bool:
+        """Supprime toute autoroute ayant une extrémité en (ligne, colonne).
+
+        Args:
+            ligne: Indice de la ligne.
+            colonne: Indice de la colonne.
+
+        Returns:
+            True si au moins une autoroute a été supprimée, False sinon.
+        """
+        cible_col_lig: tuple[int, int] = (colonne, ligne)
+        autoroutes_restantes: list[tuple[tuple[int, int], tuple[int, int]]] = (
+            []
+        )
+        supprimee: bool = False
+
+        for extremite_1, extremite_2 in self.autoroutes:
+            est_touchee: bool = (
+                extremite_1 == cible_col_lig or extremite_2 == cible_col_lig
+            )
+            if est_touchee:
+                self.stock_autoroutes = (
+                    self.stock_autoroutes + UNITE_STOCK_ROUTE
+                )
+                supprimee = True
+            else:
+                autoroutes_restantes.append((extremite_1, extremite_2))
+
+        self.autoroutes = autoroutes_restantes
+        return supprimee
+
+    def supprimer_route(self, ligne: int, colonne: int) -> bool:
+        """Supprime une route, un pont ou un tunnel et restaure le terrain.
+
+        Refuse la suppression du bout de route obligatoire (case_sortie)
+        d'une Maison ou d'une Usine. Si la case porte un feu, un rond-point
+        ou une autoroute, les retire et rembourse leurs stocks.
+
+        Args:
+            ligne: Indice de la ligne où supprimer la voie.
+            colonne: Indice de la colonne où supprimer la voie.
+
+        Returns:
+            True si un élément a été supprimé, False sinon.
+        """
+        if not self.est_case_route(ligne, colonne):
+            return False
+        else:
+            pass
+
+        if self.supprimer_autoroute_en_case(ligne, colonne):
+            return True
+        else:
+            pass
+
+        if self.supprimer_feu_circulation(ligne, colonne):
+            return True
+        else:
+            pass
+
+        if self.est_case_rond_point(ligne, colonne):
+            if self.est_case_sortie_de_batiment(ligne, colonne):
+                return self.supprimer_rond_point(ligne, colonne)
+            else:
+                self.supprimer_rond_point(ligne, colonne)
+                return self.supprimer_route(ligne, colonne)
+        else:
+            pass
+
+        if self.est_case_sortie_de_batiment(ligne, colonne):
+            return False
+        else:
+            coordonnee_col_lig: tuple[int, int] = (colonne, ligne)
+            coordonnee_lig_col: tuple[int, int] = (ligne, colonne)
+            etat_actuel: int = self.matrice[ligne][colonne]
+            self.retirer_toutes_connexions_case(coordonnee_col_lig)
+
+            if etat_actuel == CASE_PONT:
+                terrain_initial: int = self.terrains_origine.pop(
+                    coordonnee_lig_col,
+                    CASE_EAU,
+                )
+                self.definir_etat_case(ligne, colonne, terrain_initial)
+                self.stock_ponts = self.stock_ponts + UNITE_STOCK_ROUTE
+                return True
+            else:
+                if etat_actuel == CASE_TUNNEL:
+                    terrain_initial = self.terrains_origine.pop(
+                        coordonnee_lig_col,
+                        CASE_MONTAGNE,
+                    )
+                    self.definir_etat_case(ligne, colonne, terrain_initial)
+                    self.stock_tunnels = (
+                        self.stock_tunnels + UNITE_STOCK_ROUTE
+                    )
+                    return True
+                else:
+                    self.definir_etat_case(ligne, colonne, CASE_VIDE)
+                    self.stock_routes = (
+                        self.stock_routes + UNITE_STOCK_ROUTE
+                    )
+                    return True
 
     def sont_cases_adjacentes_chebyshev(
         self,
@@ -1738,6 +2229,22 @@ class Grid:
                     coordonnee_voisin,
                 ):
                     voisins_accessibles.append(coordonnee_voisin)
+                else:
+                    pass
+            else:
+                pass
+
+        voisins_autoroute: list[tuple[int, int]] = (
+            self.obtenir_voisins_autoroute(coordonnee)
+        )
+        for destination_autoroute in voisins_autoroute:
+            if destination_autoroute not in voisins_accessibles:
+                if self.est_case_traversable(
+                    destination_autoroute,
+                    depart,
+                    arrivee,
+                ):
+                    voisins_accessibles.append(destination_autoroute)
                 else:
                     pass
             else:

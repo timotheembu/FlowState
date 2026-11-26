@@ -7,6 +7,10 @@ from src.config import (
     COUT_INITIAL_CHEMIN,
     COUT_INITIAL_CHEMIN_FLOAT,
     COUT_ORTHOGONAL,
+    COUT_TRAVERSEE_AUTOROUTE,
+    COUT_TRAVERSEE_ROND_POINT,
+    FACTEUR_HEURISTIQUE_AVEC_AUTOROUTE,
+    LONGUEUR_LISTE_VIDE,
     PAS_INCREMENT_COMPTEUR,
 )
 from src.models.grid import Grid
@@ -67,18 +71,33 @@ def calculer_heuristique_octile(
 def calculer_cout_deplacement(
     noeud_source: tuple[int, int],
     noeud_cible: tuple[int, int],
+    grille: Grid | None = None,
 ) -> float:
-    """Détermine le coût d'un pas orthogonal ou diagonal entre deux cases.
+    """Détermine le coût d'un pas (orthogonal, diagonal, rond-point, autoroute).
 
     Args:
         noeud_source: Coordonnée (colonne, ligne) de départ du pas.
         noeud_cible: Coordonnée (colonne, ligne) d'arrivée du pas.
+        grille: Instance optionnelle de Grid pour détecter autoroutes et
+            ronds-points.
 
     Returns:
-        COUT_DIAGONALE si le déplacement est diagonal, COUT_ORTHOGONAL sinon.
+        Coût flottant du déplacement entre noeud_source et noeud_cible.
     """
     colonne_source, ligne_source = noeud_source
     colonne_cible, ligne_cible = noeud_cible
+
+    if grille is not None:
+        if grille.sont_reliees_par_autoroute(noeud_source, noeud_cible):
+            return COUT_TRAVERSEE_AUTOROUTE
+        else:
+            if grille.est_case_rond_point(ligne_cible, colonne_cible):
+                return COUT_TRAVERSEE_ROND_POINT
+            else:
+                pass
+    else:
+        pass
+
     ecart_colonne: int = abs(colonne_cible - colonne_source)
     ecart_ligne: int = abs(ligne_cible - ligne_source)
 
@@ -203,6 +222,7 @@ def trouver_chemin_a_etoile(
             cout_pas: float = calculer_cout_deplacement(
                 noeud_courant,
                 voisin,
+                grille,
             )
             nouveau_cout_g: float = couts_g[noeud_courant] + cout_pas
             voisin_deja_connu: bool = voisin in couts_g
@@ -219,10 +239,18 @@ def trouver_chemin_a_etoile(
             if est_meilleur_chemin:
                 parents[voisin] = noeud_courant
                 couts_g[voisin] = nouveau_cout_g
-                score_f: float = (
-                    nouveau_cout_g
-                    + calculer_heuristique_octile(voisin, arrivee)
+                heuristique_brute: float = calculer_heuristique_octile(
+                    voisin,
+                    arrivee,
                 )
+                if len(grille.autoroutes) > LONGUEUR_LISTE_VIDE:
+                    heuristique_adaptee: float = (
+                        heuristique_brute
+                        * FACTEUR_HEURISTIQUE_AVEC_AUTOROUTE
+                    )
+                else:
+                    heuristique_adaptee = heuristique_brute
+                score_f: float = nouveau_cout_g + heuristique_adaptee
                 compteur_insertion = (
                     compteur_insertion + PAS_INCREMENT_COMPTEUR
                 )

@@ -674,6 +674,11 @@ class GameEngine:
             else:
                 pass
 
+    def mettre_a_jour_feux_circulation(self) -> None:
+        """Fait avancer le cycle temporel de tous les feux de circulation."""
+        for feu in self.grille.feux_circulation.values():
+            feu.mettre_a_jour()
+
     def mettre_a_jour_deplacements_et_arrivees(self) -> None:
         """Fait avancer les voitures et gère l'arrêt à l'usine puis le retour."""
         voitures_en_route: list[Voiture] = []
@@ -704,7 +709,7 @@ class GameEngine:
                     pass
                 voitures_en_route.append(voiture)
             else:
-                voiture.avancer(self.voitures)
+                voiture.avancer(self.voitures, self.grille)
 
                 if voiture.est_arrivee_destination_etape:
                     if voiture.etat == ETAT_VOITURE_ALLER_USINE:
@@ -733,6 +738,7 @@ class GameEngine:
             pass
 
         self.mettre_a_jour_interpolation_camera()
+        self.mettre_a_jour_feux_circulation()
         self.gerer_apparition_procedurale_batiments()
         self.mettre_a_jour_demandes_usines()
         if self.partie_perdue:

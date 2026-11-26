@@ -52,6 +52,6 @@ mini-motorways-clone/
 - [x] **Étape 12 :** Connexions explicites des routes (graphe d'arêtes tracées par le joueur) : autoriser le passage d'une route à côté d'une Maison sans s'y connecter, et empêcher les routes parallèles adjacentes de fusionner automatiquement sans tracé direct.
 - [x] **Étape 13 :** Entrée unique orientable sur chaque Usine (apparition avec un bout de route attaché, interdiction de traverser une Usine avec deux routes) et tracé libre des angles droits à la souris sans relâcher le clic.
 - [x] **Étape 14 :** Génération et sélection de cartes avec obstacles naturels (`CASE_EAU`, `CASE_MONTAGNE`) empêchant la pose de routes classiques et le spawn de bâtiments.
-- [ ] **Étape 15 :** Infrastructures et bonus spéciaux : Ponts (sur `CASE_EAU`), Tunnels (sous `CASE_MONTAGNE`), Feux de circulation, Ronds-points et Autoroutes avec inventaire dédié.
+- [x] **Étape 15 :** Infrastructures et bonus spéciaux : Ponts (sur `CASE_EAU`), Tunnels (sous `CASE_MONTAGNE`), Feux de circulation, Ronds-points et Autoroutes avec inventaire dédié.
 - [ ] **Étape 16 :** Système temporel (horloge visuelle + défilement des jours) et choix hebdomadaire chaque lundi (pause et sélection entre deux lots de routes/bonus).
 - [ ] **Étape 17 :** Mode Édition (touche dédiée pour activer/désactiver le mode construction ; tracé actif uniquement en mode édition et grille masquée en mode jeu normal).

@@ -10,11 +10,20 @@ from src.config import (
     DECALAGE_VOISIN_NEGATIF,
     DECALAGE_VOISIN_NUL,
     DECALAGE_VOISIN_POSITIF,
+    ESPACEMENT_BOUTONS_OUTIL_X,
     FACTEUR_ECHELLE_UNITE,
+    HAUTEUR_BOUTON_OUTIL,
     INDICE_AVANT_DERNIERE_CASE_TRACEE,
     INDICE_BOUTON_DROIT,
     INDICE_BOUTON_GAUCHE,
     INDICE_DERNIERE_CASE_TRACEE,
+    LARGEUR_BOUTON_OUTIL,
+    OUTIL_AUTOROUTE,
+    OUTIL_FEU,
+    OUTIL_ROND_POINT,
+    OUTIL_ROUTE,
+    POSITION_BARRE_OUTILS_X,
+    POSITION_BARRE_OUTILS_Y,
     TAILLE_CASE,
     TAILLE_MIN_HISTORIQUE_ELAGAGE,
 )
@@ -23,14 +32,65 @@ from src.models.grid import Grid
 
 
 class InputHandler:
-    """Traduit les événements souris en actions de tracé ou d'effacement."""
+    """Traduit les événements souris et clavier en actions de construction."""
 
     def __init__(self) -> None:
-        """Initialise le gestionnaire d'entrées et la mémoire de tracé."""
+        """Initialise le gestionnaire d'entrées, la mémoire et l'outil actif."""
         self.derniere_case_tracee: tuple[int, int] | None = None
         self.historique_trace_courant: list[tuple[int, int]] = []
         self.maison_en_reorientation: Maison | None = None
         self.usine_en_reorientation: Usine | None = None
+        self.outil_actif: int = OUTIL_ROUTE
+        self.depart_autoroute_selectionne: tuple[int, int] | None = None
+
+    def definir_outil_actif(self, nouvel_outil: int) -> None:
+        """Change l'outil de construction actif et réinitialise la sélection.
+
+        Args:
+            nouvel_outil: Identifiant de l'outil (OUTIL_ROUTE, OUTIL_FEU, etc.).
+        """
+        self.outil_actif = nouvel_outil
+        self.depart_autoroute_selectionne = None
+        self.derniere_case_tracee = None
+        self.historique_trace_courant = []
+
+    def verifier_clic_barre_outils_hud(
+        self,
+        position_x: int,
+        position_y: int,
+    ) -> bool:
+        """Vérifie si un clic souris sélectionne un bouton d'outil dans le HUD.
+
+        Args:
+            position_x: Coordonnée X du clic en pixels écran.
+            position_y: Coordonnée Y du clic en pixels écran.
+
+        Returns:
+            True si un bouton d'outil du HUD a été cliqué, False sinon.
+        """
+        outils_hud: list[int] = [
+            OUTIL_ROUTE,
+            OUTIL_FEU,
+            OUTIL_ROND_POINT,
+            OUTIL_AUTOROUTE,
+        ]
+        for indice_outil, code_outil in enumerate(outils_hud):
+            bouton_x: int = (
+                POSITION_BARRE_OUTILS_X
+                + indice_outil * ESPACEMENT_BOUTONS_OUTIL_X
+            )
+            rectangle_outil: pygame.Rect = pygame.Rect(
+                bouton_x,
+                POSITION_BARRE_OUTILS_Y,
+                LARGEUR_BOUTON_OUTIL,
+                HAUTEUR_BOUTON_OUTIL,
+            )
+            if rectangle_outil.collidepoint((position_x, position_y)):
+                self.definir_outil_actif(code_outil)
+                return True
+            else:
+                pass
+        return False
 
     def convertir_pixels_en_case(
         self,
@@ -197,14 +257,10 @@ class InputHandler:
             if est_suppression:
                 grille.supprimer_route(ligne_courante, colonne_courante)
             else:
-                if grille.est_case_libre(ligne_courante, colonne_courante):
-                    a_ete_posee: bool = grille.placer_route(
-                        ligne_courante,
-                        colonne_courante,
-                    )
-                else:
-                    a_ete_posee = False
-
+                a_ete_posee: bool = grille.placer_voie_automatique(
+                    ligne_courante,
+                    colonne_courante,
+                )
                 grille.connecter_cases(case_precedente, case_etape)
                 self.enregistrer_et_nettoyer_case_tracee(
                     grille,
@@ -390,6 +446,49 @@ class InputHandler:
         )
         case_actuelle: tuple[int, int] = (colonne, ligne)
 
+        if self.outil_actif == OUTIL_FEU:
+            if self.derniere_case_tracee is None:
+                grille.placer_feu_circulation(ligne, colonne)
+                self.derniere_case_tracee = case_actuelle
+            else:
+                pass
+            return
+        else:
+            pass
+
+        if self.outil_actif == OUTIL_ROND_POINT:
+            if self.derniere_case_tracee is None:
+                grille.placer_rond_point(ligne, colonne)
+                self.derniere_case_tracee = case_actuelle
+            else:
+                pass
+            return
+        else:
+            pass
+
+        if self.outil_actif == OUTIL_AUTOROUTE:
+            if self.derniere_case_tracee is None:
+                if self.depart_autoroute_selectionne is None:
+                    if grille.est_case_route(ligne, colonne):
+                        self.depart_autoroute_selectionne = case_actuelle
+                    else:
+                        pass
+                else:
+                    if case_actuelle != self.depart_autoroute_selectionne:
+                        grille.placer_autoroute(
+                            self.depart_autoroute_selectionne,
+                            case_actuelle,
+                        )
+                        self.depart_autoroute_selectionne = None
+                    else:
+                        pass
+                self.derniere_case_tracee = case_actuelle
+            else:
+                pass
+            return
+        else:
+            pass
+
         if self.derniere_case_tracee is None:
             maison_cliquee: Maison | None = (
                 grille.obtenir_maison_a_coordonnee(ligne, colonne)
@@ -431,7 +530,10 @@ class InputHandler:
                 self.historique_trace_courant = [case_actuelle]
                 return
             else:
-                a_ete_posee: bool = grille.placer_route(ligne, colonne)
+                a_ete_posee: bool = grille.placer_voie_automatique(
+                    ligne,
+                    colonne,
+                )
                 self.enregistrer_et_nettoyer_case_tracee(
                     grille,
                     case_actuelle,
@@ -520,6 +622,36 @@ class InputHandler:
             ligne_debut = COORDONNEE_CAMERA_ORIGINE_FLOAT
             taille_case_cam = float(TAILLE_CASE) * FACTEUR_ECHELLE_UNITE
 
+        if evenement.type == pygame.KEYDOWN:
+            if (
+                evenement.key == pygame.K_1
+                or evenement.key == pygame.K_KP1
+            ):
+                self.definir_outil_actif(OUTIL_ROUTE)
+            else:
+                if (
+                    evenement.key == pygame.K_2
+                    or evenement.key == pygame.K_KP2
+                ):
+                    self.definir_outil_actif(OUTIL_FEU)
+                else:
+                    if (
+                        evenement.key == pygame.K_3
+                        or evenement.key == pygame.K_KP3
+                    ):
+                        self.definir_outil_actif(OUTIL_ROND_POINT)
+                    else:
+                        if (
+                            evenement.key == pygame.K_4
+                            or evenement.key == pygame.K_KP4
+                        ):
+                            self.definir_outil_actif(OUTIL_AUTOROUTE)
+                        else:
+                            pass
+            return
+        else:
+            pass
+
         if evenement.type == pygame.MOUSEBUTTONDOWN:
             self.derniere_case_tracee = None
             self.historique_trace_courant = []
@@ -527,16 +659,23 @@ class InputHandler:
             self.usine_en_reorientation = None
             position_x, position_y = evenement.pos
             if evenement.button == BOUTON_SOURIS_GAUCHE:
-                self.appliquer_action_clic_gauche(
-                    grille,
+                if self.verifier_clic_barre_outils_hud(
                     position_x,
                     position_y,
-                    colonne_debut,
-                    ligne_debut,
-                    taille_case_cam,
-                )
+                ):
+                    return
+                else:
+                    self.appliquer_action_clic_gauche(
+                        grille,
+                        position_x,
+                        position_y,
+                        colonne_debut,
+                        ligne_debut,
+                        taille_case_cam,
+                    )
             else:
                 if evenement.button == BOUTON_SOURIS_DROIT:
+                    self.depart_autoroute_selectionne = None
                     self.appliquer_action_clic_droit(
                         grille,
                         position_x,

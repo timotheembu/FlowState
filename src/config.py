@@ -22,6 +22,9 @@ CASE_USINE: int = 2
 CASE_ROUTE: int = 3
 CASE_EAU: int = 4
 CASE_MONTAGNE: int = 5
+CASE_PONT: int = 6
+CASE_TUNNEL: int = 7
+CASE_ROND_POINT: int = 8
 
 # Couleurs de l'environnement (R, G, B)
 COULEUR_FOND: tuple[int, int, int] = (245, 242, 235)
@@ -242,3 +245,61 @@ POSITION_TITRE_ACCUEIL_Y: int = 240
 POSITION_SOUS_TITRE_ACCUEIL_Y: int = 310
 COULEUR_BOUTON_CARTE: tuple[int, int, int] = (235, 230, 220)
 COULEUR_BOUTON_CARTE_SURVOL: tuple[int, int, int] = (215, 210, 198)
+
+# Stocks initiaux des infrastructures et bonus spéciaux (Étape 15)
+STOCK_PONTS_INITIAL: int = 3
+STOCK_TUNNELS_INITIAL: int = 3
+STOCK_FEUX_INITIAL: int = 3
+STOCK_RONDS_POINTS_INITIAL: int = 2
+STOCK_AUTOROUTES_INITIAL: int = 2
+
+# Outils de construction sélectionnables (touches 1 à 4 ou HUD cliquable)
+OUTIL_ROUTE: int = 1
+OUTIL_FEU: int = 2
+OUTIL_ROND_POINT: int = 3
+OUTIL_AUTOROUTE: int = 4
+
+# Paramètres des feux de circulation, ronds-points et autoroutes
+ETAT_FEU_HORIZONTAL_VERT: int = 0
+ETAT_FEU_VERTICAL_VERT: int = 1
+DUREE_CYCLE_FEU_SECONDES: float = 3.0
+INTERVALLE_ALTERNANCE_FEU_FRAMES: int = int(DUREE_CYCLE_FEU_SECONDES * FPS)
+MULTIPLICATEUR_VITESSE_AUTOROUTE: float = 2.2
+MULTIPLICATEUR_VITESSE_ROND_POINT: float = 1.25
+COUT_TRAVERSEE_AUTOROUTE: float = 0.5
+COUT_TRAVERSEE_ROND_POINT: float = 0.75
+DISTANCE_MIN_AUTOROUTE_CASES: int = 2
+FACTEUR_HEURISTIQUE_AVEC_AUTOROUTE: float = 0.05
+
+# Couleurs et dimensions d'affichage des infrastructures spéciales
+COULEUR_PONT: tuple[int, int, int] = (150, 120, 85)
+COULEUR_BORDURE_PONT: tuple[int, int, int] = (95, 75, 50)
+COULEUR_TUNNEL: tuple[int, int, int] = (65, 65, 75)
+COULEUR_ENTREE_TUNNEL: tuple[int, int, int] = (35, 35, 42)
+COULEUR_ROND_POINT: tuple[int, int, int] = (85, 85, 90)
+COULEUR_CENTRE_ROND_POINT: tuple[int, int, int] = (125, 185, 115)
+COULEUR_AUTOROUTE: tuple[int, int, int] = (230, 145, 56)
+COULEUR_BORDURE_AUTOROUTE: tuple[int, int, int] = (140, 80, 25)
+COULEUR_FEU_VERT: tuple[int, int, int] = (72, 207, 110)
+COULEUR_FEU_ROUGE: tuple[int, int, int] = (235, 65, 65)
+COULEUR_OUTIL_ACTIF: tuple[int, int, int] = (205, 228, 248)
+RAYON_EXTERIEUR_ROND_POINT: int = 15
+RAYON_INTERIEUR_ROND_POINT: int = 7
+RAYON_ENTREE_TUNNEL: int = 10
+RAYON_INTERIEUR_TUNNEL: int = 6
+RAYON_VOYANT_FEU: int = 3
+DECALAGE_VOYANT_FEU: int = 5
+LARGEUR_AUTOROUTE: int = 10
+BORDURE_AUTOROUTE: int = 2
+RAYON_PILIER_AUTOROUTE: int = 8
+HAUTEUR_ARCHE_AUTOROUTE: float = 28.0
+NB_SEGMENTS_ARCHE_AUTOROUTE: int = 16
+COEFFICIENT_PARABOLE_ARCHE: float = 4.0
+
+# Dimensions des boutons de la barre d'outils HUD (en haut à droite)
+POSITION_BARRE_OUTILS_X: int = 380
+POSITION_BARRE_OUTILS_Y: int = 16
+LARGEUR_BOUTON_OUTIL: int = 165
+HAUTEUR_BOUTON_OUTIL: int = 42
+ESPACEMENT_BOUTONS_OUTIL_X: int = 172
+TAILLE_POLICE_OUTIL: int = 22

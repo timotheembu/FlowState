@@ -107,6 +107,7 @@ def executer_jeu() -> None:
             moteur_jeu.score,
             moteur_jeu.partie_perdue,
             parametres_camera_rendu,
+            gestionnaire_entrees.outil_actif,
         )
         horloge.tick(FPS)
 
