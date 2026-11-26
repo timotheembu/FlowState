@@ -1,20 +1,26 @@
 """Modèle de la grille spatiale (logique métier pure sans Pygame)."""
 
+from math import hypot
+
 from src.config import (
     CASE_MAISON,
     CASE_ROUTE,
     CASE_USINE,
     CASE_VIDE,
+    COMPTEUR_INITIAL_FRAMES,
     DIRECTIONS_HUIT_VOISINS,
     DISTANCE_CHEBYSHEV_ADJACENTE,
     DISTANCE_MIN_ENTRE_BATIMENTS,
     DISTANCE_MIN_SECOURS_BATIMENT,
+    DIVISEUR_MOITIE,
     INDICE_MINIMUM_GRILLE,
     LONGUEUR_LISTE_VIDE,
     MARGE_BORDURE_APPARITION,
     MARGE_BORDURE_NULLE,
     NB_COLONNES,
     NB_LIGNES,
+    NB_MAX_ROUTES_ADJACENTES_MAISON,
+    PAS_INCREMENT_COMPTEUR,
     STOCK_ROUTES_EPUISE,
     STOCK_ROUTES_INITIAL,
     UNITE_STOCK_ROUTE,
@@ -45,6 +51,7 @@ class Grid:
         self.matrice: list[list[int]] = []
         self.maisons: list[Maison] = []
         self.usines: list[Usine] = []
+        self.connexions: dict[tuple[int, int], set[tuple[int, int]]] = {}
         self.reinitialiser()
 
     def reinitialiser(self) -> None:
@@ -58,7 +65,95 @@ class Grid:
         self.matrice = nouvelle_matrice
         self.maisons = []
         self.usines = []
+        self.connexions = {}
         self.stock_routes = self.stock_routes_initial
+
+    def obtenir_voisins_connectes(
+        self,
+        coordonnee: tuple[int, int],
+    ) -> set[tuple[int, int]]:
+        """Retourne l'ensemble des coordonnées (col, lig) connectées à une case.
+
+        Args:
+            coordonnee: Coordonnée (colonne, ligne) de la case interrogée.
+
+        Returns:
+            Un ensemble de tuples (colonne, ligne) explicitement connectés.
+        """
+        if coordonnee in self.connexions:
+            return set(self.connexions[coordonnee])
+        else:
+            return set()
+
+    def sont_cases_connectees(
+        self,
+        case_a: tuple[int, int],
+        case_b: tuple[int, int],
+    ) -> bool:
+        """Vérifie si deux coordonnées (col, lig) sont reliées dans le graphe.
+
+        Args:
+            case_a: Coordonnée (colonne, ligne) de la première case.
+            case_b: Coordonnée (colonne, ligne) de la seconde case.
+
+        Returns:
+            True si une arête existe entre case_a et case_b, False sinon.
+        """
+        if case_a in self.connexions:
+            if case_b in self.connexions[case_a]:
+                return True
+            else:
+                return False
+        else:
+            return False
+
+    def ajouter_arete_connexion(
+        self,
+        case_a: tuple[int, int],
+        case_b: tuple[int, int],
+    ) -> None:
+        """Enregistre une arête bidirectionnelle entre case_a et case_b.
+
+        Args:
+            case_a: Coordonnée (colonne, ligne) de la première case.
+            case_b: Coordonnée (colonne, ligne) de la seconde case.
+        """
+        if case_a not in self.connexions:
+            self.connexions[case_a] = set()
+        else:
+            pass
+        if case_b not in self.connexions:
+            self.connexions[case_b] = set()
+        else:
+            pass
+        self.connexions[case_a].add(case_b)
+        self.connexions[case_b].add(case_a)
+
+    def retirer_toutes_connexions_case(
+        self,
+        coordonnee: tuple[int, int],
+    ) -> None:
+        """Supprime toutes les arêtes incidentes à coordonnee dans le graphe.
+
+        Args:
+            coordonnee: Coordonnée (colonne, ligne) de la case à déconnecter.
+        """
+        if coordonnee in self.connexions:
+            voisins_lies: list[tuple[int, int]] = list(
+                self.connexions[coordonnee]
+            )
+            for voisin in voisins_lies:
+                if voisin in self.connexions:
+                    self.connexions[voisin].discard(coordonnee)
+                    if len(self.connexions[voisin]) == LONGUEUR_LISTE_VIDE:
+                        del self.connexions[voisin]
+                    else:
+                        pass
+                else:
+                    pass
+            del self.connexions[coordonnee]
+        else:
+            pass
 
     def est_coordonnee_valide(self, ligne: int, colonne: int) -> bool:
         """Vérifie si une coordonnée (ligne, colonne) est dans la grille.
@@ -139,8 +234,394 @@ class Grid:
         else:
             return False
 
+    def obtenir_maison_a_coordonnee(
+        self,
+        ligne: int,
+        colonne: int,
+    ) -> Maison | None:
+        """Retourne la maison située aux coordonnées données si elle existe.
+
+        Args:
+            ligne: Indice de la ligne.
+            colonne: Indice de la colonne.
+
+        Returns:
+            Instance de Maison correspondante, ou None.
+        """
+        for maison in self.maisons:
+            if maison.ligne == ligne and maison.colonne == colonne:
+                return maison
+            else:
+                pass
+        return None
+
+    def obtenir_maison_proprietaire_sortie(
+        self,
+        ligne: int,
+        colonne: int,
+    ) -> Maison | None:
+        """Retourne la maison dont la case_sortie correspond à (ligne, colonne).
+
+        Args:
+            ligne: Indice de la ligne de la route.
+            colonne: Indice de la colonne de la route.
+
+        Returns:
+            Instance de Maison propriétaire de cette sortie, ou None.
+        """
+        coordonnee_cible: tuple[int, int] = (ligne, colonne)
+        for maison in self.maisons:
+            if maison.case_sortie == coordonnee_cible:
+                return maison
+            else:
+                pass
+        return None
+
+    def est_case_sortie_de_maison(
+        self,
+        ligne: int,
+        colonne: int,
+    ) -> bool:
+        """Indique si la case (ligne, colonne) est la sortie d'une maison.
+
+        Args:
+            ligne: Indice de la ligne.
+            colonne: Indice de la colonne.
+
+        Returns:
+            True si une maison possède cette case comme case_sortie, False sinon.
+        """
+        maison_proprietaire: Maison | None = (
+            self.obtenir_maison_proprietaire_sortie(ligne, colonne)
+        )
+        if maison_proprietaire is not None:
+            return True
+        else:
+            return False
+
+    def compter_routes_adjacentes_maison(
+        self,
+        maison: Maison,
+        case_ignoree: tuple[int, int] | None = None,
+    ) -> int:
+        """Compte le nombre de CASE_ROUTE parmi les 8 voisins d'une maison.
+
+        Args:
+            maison: Instance de Maison à inspecter.
+            case_ignoree: Coordonnée (ligne, colonne) optionnelle à ignorer.
+
+        Returns:
+            Nombre entier de cases de route adjacentes à la maison.
+        """
+        nb_routes: int = COMPTEUR_INITIAL_FRAMES
+        for delta_colonne, delta_ligne in DIRECTIONS_HUIT_VOISINS:
+            voisin_ligne: int = maison.ligne + delta_ligne
+            voisin_colonne: int = maison.colonne + delta_colonne
+            coordonnee_voisin: tuple[int, int] = (
+                voisin_ligne,
+                voisin_colonne,
+            )
+            if coordonnee_voisin != case_ignoree:
+                if self.est_case_route(voisin_ligne, voisin_colonne):
+                    nb_routes = nb_routes + PAS_INCREMENT_COMPTEUR
+                else:
+                    pass
+            else:
+                pass
+        return nb_routes
+
+    def peut_connecter_route_pres_des_maisons(
+        self,
+        ligne: int,
+        colonne: int,
+        maison_autorisee: Maison | None = None,
+        ancienne_sortie_ignoree: tuple[int, int] | None = None,
+    ) -> bool:
+        """Vérifie qu'aucune maison voisine ne dépasse son unique route.
+
+        Une maison ne peut être adjacente qu'à une seule CASE_ROUTE (sa
+        case_sortie). Toute tentative de poser une deuxième route voisine
+        d'une maison déjà connectée est refusée.
+
+        Args:
+            ligne: Ligne de la case où l'on souhaite poser une route.
+            colonne: Colonne de la case où l'on souhaite poser une route.
+            maison_autorisee: Maison en cours d'initialisation ou de
+                réorientation de sa propre sortie.
+            ancienne_sortie_ignoree: Coordonnée (ligne, colonne) de
+                l'ancienne sortie en cours de déplacement.
+
+        Returns:
+            True si la règle d'unicité est respectée pour toutes les maisons,
+            False sinon.
+        """
+        case_candidate_col_lig: tuple[int, int] = (colonne, ligne)
+        case_candidate_lig_col: tuple[int, int] = (ligne, colonne)
+
+        for maison in self.maisons:
+            coordonnee_maison_col_lig: tuple[int, int] = (
+                maison.colonne,
+                maison.ligne,
+            )
+            if self.sont_cases_adjacentes_chebyshev(
+                case_candidate_col_lig,
+                coordonnee_maison_col_lig,
+            ):
+                if maison is maison_autorisee:
+                    nb_autres_routes: int = (
+                        self.compter_routes_adjacentes_maison(
+                            maison,
+                            ancienne_sortie_ignoree,
+                        )
+                    )
+                    if nb_autres_routes >= NB_MAX_ROUTES_ADJACENTES_MAISON:
+                        return False
+                    else:
+                        pass
+                else:
+                    if maison.case_sortie is not None:
+                        if maison.case_sortie != case_candidate_lig_col:
+                            return False
+                        else:
+                            pass
+                    else:
+                        nb_routes_existantes: int = (
+                            self.compter_routes_adjacentes_maison(
+                                maison,
+                                ancienne_sortie_ignoree,
+                            )
+                        )
+                        if (
+                            nb_routes_existantes
+                            >= NB_MAX_ROUTES_ADJACENTES_MAISON
+                        ):
+                            return False
+                        else:
+                            pass
+            else:
+                pass
+
+        return True
+
+    def obtenir_cible_orientation_maison(
+        self,
+        maison: Maison,
+    ) -> tuple[float, float]:
+        """Détermine le point (ligne, colonne) vers lequel orienter la sortie.
+
+        Privilégie l'usine de même couleur la plus proche ; à défaut, vise
+        le centre de la grille.
+
+        Args:
+            maison: Instance de Maison à orienter.
+
+        Returns:
+            Un tuple (ligne_cible, colonne_cible) flottant.
+        """
+        meilleure_usine: Usine | None = None
+        meilleure_distance: float = float(self.nb_lignes + self.nb_colonnes)
+
+        for usine in self.usines:
+            if usine.couleur == maison.couleur:
+                distance: float = hypot(
+                    float(usine.ligne - maison.ligne),
+                    float(usine.colonne - maison.colonne),
+                )
+                if meilleure_usine is None or distance < meilleure_distance:
+                    meilleure_usine = usine
+                    meilleure_distance = distance
+                else:
+                    pass
+            else:
+                pass
+
+        if meilleure_usine is not None:
+            return (
+                float(meilleure_usine.ligne),
+                float(meilleure_usine.colonne),
+            )
+        else:
+            moitie: float = float(DIVISEUR_MOITIE)
+            return (
+                float(self.nb_lignes) / moitie,
+                float(self.nb_colonnes) / moitie,
+            )
+
+    def initialiser_sortie_maison(self, maison: Maison) -> bool:
+        """Attribue, pose gratuitement et connecte la case_sortie d'une maison.
+
+        Si une route libre d'attache est déjà adjacente à la maison, elle
+        devient la case_sortie et y est connectée. Sinon, choisit la
+        meilleure case libre adjacente orientée vers l'usine cible, y pose
+        gratuitement une CASE_ROUTE et la connecte à la maison.
+
+        Args:
+            maison: Instance de Maison nouvellement placée.
+
+        Returns:
+            True si une case_sortie a été associée et connectée, False sinon.
+        """
+        coordonnee_maison: tuple[int, int] = (maison.colonne, maison.ligne)
+
+        if maison.case_sortie is not None:
+            lig_sortie, col_sortie = maison.case_sortie
+            if self.est_case_libre(lig_sortie, col_sortie):
+                self.definir_etat_case(
+                    lig_sortie,
+                    col_sortie,
+                    CASE_ROUTE,
+                )
+                self.connecter_cases(
+                    coordonnee_maison,
+                    (col_sortie, lig_sortie),
+                )
+                return True
+            else:
+                if self.est_case_route(lig_sortie, col_sortie):
+                    self.connecter_cases(
+                        coordonnee_maison,
+                        (col_sortie, lig_sortie),
+                    )
+                    return True
+                else:
+                    pass
+
+        routes_adjacentes: list[tuple[int, int]] = []
+        for delta_colonne, delta_ligne in DIRECTIONS_HUIT_VOISINS:
+            voisin_ligne: int = maison.ligne + delta_ligne
+            voisin_colonne: int = maison.colonne + delta_colonne
+            if self.est_case_route(voisin_ligne, voisin_colonne):
+                if not self.est_case_sortie_de_maison(
+                    voisin_ligne,
+                    voisin_colonne,
+                ):
+                    routes_adjacentes.append((voisin_ligne, voisin_colonne))
+                else:
+                    pass
+            else:
+                pass
+
+        if len(routes_adjacentes) == NB_MAX_ROUTES_ADJACENTES_MAISON:
+            sortie_existante: tuple[int, int] = routes_adjacentes[
+                INDICE_MINIMUM_GRILLE
+            ]
+            maison.definir_case_sortie(sortie_existante)
+            lig_existante, col_existante = sortie_existante
+            self.connecter_cases(
+                coordonnee_maison,
+                (col_existante, lig_existante),
+            )
+            return True
+        else:
+            pass
+
+        cible_ligne, cible_colonne = self.obtenir_cible_orientation_maison(
+            maison
+        )
+        meilleure_case: tuple[int, int] | None = None
+        meilleure_distance: float = float(self.nb_lignes + self.nb_colonnes)
+
+        for delta_colonne, delta_ligne in DIRECTIONS_HUIT_VOISINS:
+            voisin_ligne = maison.ligne + delta_ligne
+            voisin_colonne = maison.colonne + delta_colonne
+            if self.est_case_libre(voisin_ligne, voisin_colonne):
+                distance_cible: float = hypot(
+                    float(voisin_ligne) - cible_ligne,
+                    float(voisin_colonne) - cible_colonne,
+                )
+                if (
+                    meilleure_case is None
+                    or distance_cible < meilleure_distance
+                ):
+                    meilleure_case = (voisin_ligne, voisin_colonne)
+                    meilleure_distance = distance_cible
+                else:
+                    pass
+            else:
+                pass
+
+        if meilleure_case is not None:
+            lig_choisie, col_choisie = meilleure_case
+            self.definir_etat_case(lig_choisie, col_choisie, CASE_ROUTE)
+            maison.definir_case_sortie(meilleure_case)
+            self.connecter_cases(
+                coordonnee_maison,
+                (col_choisie, lig_choisie),
+            )
+            return True
+        else:
+            return False
+
+    def reorienter_sortie_maison(
+        self,
+        maison: Maison,
+        nouvelle_ligne: int,
+        nouvelle_colonne: int,
+    ) -> bool:
+        """Déplace gratuitement la case_sortie d'une maison vers une case voisine.
+
+        Supprime l'ancienne case_sortie (et ses connexions) et place la
+        nouvelle sur une case libre adjacente à la maison sans modifier le
+        stock de routes, puis connecte uniquement la maison à cette sortie.
+
+        Args:
+            maison: Instance de Maison dont on réoriente la sortie.
+            nouvelle_ligne: Ligne de la nouvelle case de sortie souhaitée.
+            nouvelle_colonne: Colonne de la nouvelle case de sortie souhaitée.
+
+        Returns:
+            True si la sortie a été réorientée, False sinon.
+        """
+        coordonnee_maison: tuple[int, int] = (maison.colonne, maison.ligne)
+        coordonnee_nouvelle: tuple[int, int] = (
+            nouvelle_colonne,
+            nouvelle_ligne,
+        )
+        if not self.sont_cases_adjacentes_chebyshev(
+            coordonnee_maison,
+            coordonnee_nouvelle,
+        ):
+            return False
+        else:
+            pass
+
+        nouvelle_sortie: tuple[int, int] = (nouvelle_ligne, nouvelle_colonne)
+        if maison.case_sortie == nouvelle_sortie:
+            self.connecter_cases(coordonnee_maison, coordonnee_nouvelle)
+            return True
+        else:
+            pass
+
+        if not self.est_case_libre(nouvelle_ligne, nouvelle_colonne):
+            return False
+        else:
+            pass
+
+        ancienne_sortie: tuple[int, int] | None = maison.case_sortie
+        if ancienne_sortie is not None:
+            ancienne_ligne, ancienne_colonne = ancienne_sortie
+            self.retirer_toutes_connexions_case(
+                (ancienne_colonne, ancienne_ligne)
+            )
+            if self.est_case_route(ancienne_ligne, ancienne_colonne):
+                self.definir_etat_case(
+                    ancienne_ligne,
+                    ancienne_colonne,
+                    CASE_VIDE,
+                )
+            else:
+                pass
+        else:
+            pass
+
+        self.retirer_toutes_connexions_case(coordonnee_maison)
+        self.definir_etat_case(nouvelle_ligne, nouvelle_colonne, CASE_ROUTE)
+        maison.definir_case_sortie(nouvelle_sortie)
+        self.connecter_cases(coordonnee_maison, coordonnee_nouvelle)
+        return True
+
     def placer_maison(self, maison: Maison) -> bool:
-        """Place une maison sur la grille si la case cible est libre.
+        """Place une maison sur la grille et crée gratuitement sa case_sortie.
 
         Args:
             maison: Instance de Maison à placer.
@@ -151,6 +632,7 @@ class Grid:
         if self.est_case_libre(maison.ligne, maison.colonne):
             self.definir_etat_case(maison.ligne, maison.colonne, CASE_MAISON)
             self.maisons.append(maison)
+            self.initialiser_sortie_maison(maison)
             return True
         else:
             return False
@@ -215,8 +697,199 @@ class Grid:
         else:
             return False
 
+    def autoriser_connexion_maison(
+        self,
+        ligne_maison: int,
+        colonne_maison: int,
+        ligne_autre: int,
+        colonne_autre: int,
+    ) -> bool:
+        """Vérifie si une Maison peut être connectée à une case adjacente.
+
+        Une Maison ne peut être connectée qu'à une CASE_ROUTE qui est son
+        unique case_sortie, et ne peut jamais dépasser 1 liaison dans
+        self.connexions.
+
+        Args:
+            ligne_maison: Ligne de la maison.
+            colonne_maison: Colonne de la maison.
+            ligne_autre: Ligne de l'autre case à connecter.
+            colonne_autre: Colonne de l'autre case à connecter.
+
+        Returns:
+            True si la connexion avec cette maison est valide, False sinon.
+        """
+        if not self.est_case_route(ligne_autre, colonne_autre):
+            return False
+        else:
+            pass
+
+        maison: Maison | None = self.obtenir_maison_a_coordonnee(
+            ligne_maison,
+            colonne_maison,
+        )
+        if maison is None:
+            return False
+        else:
+            pass
+
+        coordonnee_autre_lig_col: tuple[int, int] = (
+            ligne_autre,
+            colonne_autre,
+        )
+        coordonnee_maison_col_lig: tuple[int, int] = (
+            colonne_maison,
+            ligne_maison,
+        )
+        coordonnee_autre_col_lig: tuple[int, int] = (
+            colonne_autre,
+            ligne_autre,
+        )
+
+        if maison.case_sortie is not None:
+            if maison.case_sortie != coordonnee_autre_lig_col:
+                return False
+            else:
+                voisins_actuels: set[tuple[int, int]] = (
+                    self.obtenir_voisins_connectes(coordonnee_maison_col_lig)
+                )
+                if len(voisins_actuels) == LONGUEUR_LISTE_VIDE:
+                    return True
+                else:
+                    if coordonnee_autre_col_lig in voisins_actuels:
+                        return True
+                    else:
+                        return False
+        else:
+            voisins_existants: set[tuple[int, int]] = (
+                self.obtenir_voisins_connectes(coordonnee_maison_col_lig)
+            )
+            if len(voisins_existants) == LONGUEUR_LISTE_VIDE:
+                maison.definir_case_sortie(coordonnee_autre_lig_col)
+                return True
+            else:
+                if coordonnee_autre_col_lig in voisins_existants:
+                    maison.definir_case_sortie(coordonnee_autre_lig_col)
+                    return True
+                else:
+                    return False
+
+    def connecter_cases(
+        self,
+        case_a: tuple[int, int],
+        case_b: tuple[int, int],
+    ) -> bool:
+        """Crée une connexion explicite bidirectionnelle entre deux cases.
+
+        Les coordonnées case_a et case_b sont au format (colonne, ligne).
+        La liaison n'est enregistrée que si les cases sont adjacentes
+        (distance de Chebyshev == 1) et respectent les règles métier :
+        - Une Maison ne se connecte qu'à son unique case_sortie.
+        - Une Usine se connecte à n'importe quelle route adjacente.
+        - Deux routes adjacentes se connectent explicitement.
+
+        Args:
+            case_a: Coordonnée (colonne, ligne) de la première case.
+            case_b: Coordonnée (colonne, ligne) de la seconde case.
+
+        Returns:
+            True si la connexion a été créée (ou existait déjà), False sinon.
+        """
+        colonne_a, ligne_a = case_a
+        colonne_b, ligne_b = case_b
+
+        valides: bool = (
+            self.est_coordonnee_valide(ligne_a, colonne_a)
+            and self.est_coordonnee_valide(ligne_b, colonne_b)
+        )
+        if not valides:
+            return False
+        else:
+            pass
+
+        if not self.sont_cases_adjacentes_chebyshev(case_a, case_b):
+            return False
+        else:
+            pass
+
+        connectables: bool = (
+            self.est_case_connectable_route(ligne_a, colonne_a)
+            and self.est_case_connectable_route(ligne_b, colonne_b)
+        )
+        if not connectables:
+            return False
+        else:
+            pass
+
+        etat_a: int = self.matrice[ligne_a][colonne_a]
+        etat_b: int = self.matrice[ligne_b][colonne_b]
+        au_moins_une_route: bool = (
+            etat_a == CASE_ROUTE or etat_b == CASE_ROUTE
+        )
+        if not au_moins_une_route:
+            return False
+        else:
+            pass
+
+        if etat_a == CASE_MAISON:
+            if not self.autoriser_connexion_maison(
+                ligne_a,
+                colonne_a,
+                ligne_b,
+                colonne_b,
+            ):
+                return False
+            else:
+                pass
+        else:
+            pass
+
+        if etat_b == CASE_MAISON:
+            if not self.autoriser_connexion_maison(
+                ligne_b,
+                colonne_b,
+                ligne_a,
+                colonne_a,
+            ):
+                return False
+            else:
+                pass
+        else:
+            pass
+
+        self.ajouter_arete_connexion(case_a, case_b)
+        return True
+
+    def sont_cases_connectees_visuellement(
+        self,
+        ligne_route: int,
+        colonne_route: int,
+        ligne_voisin: int,
+        colonne_voisin: int,
+    ) -> bool:
+        """Vérifie si deux cases ont une arête explicite dans self.connexions.
+
+        Args:
+            ligne_route: Ligne de la première case.
+            colonne_route: Colonne de la première case.
+            ligne_voisin: Ligne de la case voisine.
+            colonne_voisin: Colonne de la case voisine.
+
+        Returns:
+            True si les deux cases sont explicitement connectées, False sinon.
+        """
+        case_source: tuple[int, int] = (colonne_route, ligne_route)
+        case_voisine: tuple[int, int] = (colonne_voisin, ligne_voisin)
+        if self.sont_cases_connectees(case_source, case_voisine):
+            return True
+        else:
+            return False
+
     def placer_route(self, ligne: int, colonne: int) -> bool:
-        """Place un segment de route si la case est vide et le stock suffisant.
+        """Place un segment de route sur n'importe quelle CASE_VIDE.
+
+        Autorise la pose d'une route même si elle est directement adjacente
+        à une ou plusieurs Maisons (aucune connexion implicite n'est créée).
 
         Args:
             ligne: Indice de la ligne où poser la route.
@@ -234,7 +907,10 @@ class Grid:
             return False
 
     def supprimer_route(self, ligne: int, colonne: int) -> bool:
-        """Supprime un segment de route et rembourse le stock de routes.
+        """Supprime un segment de route et retire ses arêtes dans connexions.
+
+        Refuse la suppression du bout de route obligatoire (case_sortie)
+        d'une maison.
 
         Args:
             ligne: Indice de la ligne où supprimer la route.
@@ -244,9 +920,14 @@ class Grid:
             True si une route a été supprimée, False sinon.
         """
         if self.est_case_route(ligne, colonne):
-            self.definir_etat_case(ligne, colonne, CASE_VIDE)
-            self.stock_routes = self.stock_routes + UNITE_STOCK_ROUTE
-            return True
+            if self.est_case_sortie_de_maison(ligne, colonne):
+                return False
+            else:
+                coordonnee_col_lig: tuple[int, int] = (colonne, ligne)
+                self.retirer_toutes_connexions_case(coordonnee_col_lig)
+                self.definir_etat_case(ligne, colonne, CASE_VIDE)
+                self.stock_routes = self.stock_routes + UNITE_STOCK_ROUTE
+                return True
         else:
             return False
 
@@ -286,32 +967,22 @@ class Grid:
         case_cible: tuple[int, int],
         cases_exclues: list[tuple[int, int]],
     ) -> bool:
-        """Vérifie si une case est reliée à une route ou un bâtiment externe.
+        """Vérifie si une case est explicitement reliée à un voisin externe.
 
         Args:
             case_cible: Coordonnée (colonne, ligne) de la case à inspecter.
             cases_exclues: Liste des coordonnées (colonne, ligne) à ignorer.
 
         Returns:
-            True si au moins un voisin connectable n'est pas dans
-            cases_exclues, False sinon.
+            True si au moins un voisin explicitement connecté dans
+            self.connexions n'est pas dans cases_exclues, False sinon.
         """
-        colonne_cible, ligne_cible = case_cible
-        for delta_colonne, delta_ligne in DIRECTIONS_HUIT_VOISINS:
-            voisin_colonne: int = colonne_cible + delta_colonne
-            voisin_ligne: int = ligne_cible + delta_ligne
-            coordonnee_voisin: tuple[int, int] = (
-                voisin_colonne,
-                voisin_ligne,
-            )
+        voisins_connectes: set[tuple[int, int]] = (
+            self.obtenir_voisins_connectes(case_cible)
+        )
+        for coordonnee_voisin in voisins_connectes:
             if coordonnee_voisin not in cases_exclues:
-                if self.est_case_connectable_route(
-                    voisin_ligne,
-                    voisin_colonne,
-                ):
-                    return True
-                else:
-                    pass
+                return True
             else:
                 pass
         return False
@@ -350,13 +1021,58 @@ class Grid:
         else:
             return False
 
+    def transition_respecte_sortie_maison(
+        self,
+        coordonnee_source: tuple[int, int],
+        coordonnee_destination: tuple[int, int],
+    ) -> bool:
+        """Vérifie que l'entrée ou la sortie d'une maison passe par sa case_sortie.
+
+        Args:
+            coordonnee_source: Coordonnée (colonne, ligne) de départ du pas.
+            coordonnee_destination: Coordonnée (colonne, ligne) d'arrivée du pas.
+
+        Returns:
+            True si la transition est valide vis-à-vis des maisons, False sinon.
+        """
+        col_src, lig_src = coordonnee_source
+        col_dst, lig_dst = coordonnee_destination
+
+        maison_src: Maison | None = self.obtenir_maison_a_coordonnee(
+            lig_src,
+            col_src,
+        )
+        if maison_src is not None and maison_src.case_sortie is not None:
+            if (lig_dst, col_dst) != maison_src.case_sortie:
+                return False
+            else:
+                pass
+        else:
+            pass
+
+        maison_dst: Maison | None = self.obtenir_maison_a_coordonnee(
+            lig_dst,
+            col_dst,
+        )
+        if maison_dst is not None and maison_dst.case_sortie is not None:
+            if (lig_src, col_src) != maison_dst.case_sortie:
+                return False
+            else:
+                pass
+        else:
+            pass
+
+        return True
+
     def obtenir_voisins_accessibles(
         self,
         coordonnee: tuple[int, int],
         depart: tuple[int, int],
         arrivee: tuple[int, int],
     ) -> list[tuple[int, int]]:
-        """Retourne les 8 voisins (orthogonaux et diagonaux) accessibles.
+        """Retourne les voisins explicitement connectés et traversables.
+
+        Explore uniquement les arêtes enregistrées dans self.connexions[coordonnee].
 
         Args:
             coordonnee: Coordonnée (colonne, ligne) de la case courante.
@@ -364,24 +1080,27 @@ class Grid:
             arrivee: Coordonnée (colonne, ligne) d'arrivée du trajet.
 
         Returns:
-            Liste des coordonnées (colonne, ligne) des voisins traversables.
+            Liste des coordonnées (colonne, ligne) des voisins connectés
+            et traversables.
         """
-        colonne_courante, ligne_courante = coordonnee
         voisins_accessibles: list[tuple[int, int]] = []
+        voisins_connectes: set[tuple[int, int]] = (
+            self.obtenir_voisins_connectes(coordonnee)
+        )
 
-        for delta_colonne, delta_ligne in DIRECTIONS_HUIT_VOISINS:
-            voisin_colonne: int = colonne_courante + delta_colonne
-            voisin_ligne: int = ligne_courante + delta_ligne
-            coordonnee_voisin: tuple[int, int] = (
-                voisin_colonne,
-                voisin_ligne,
-            )
+        for coordonnee_voisin in voisins_connectes:
             if self.est_case_traversable(
                 coordonnee_voisin,
                 depart,
                 arrivee,
             ):
-                voisins_accessibles.append(coordonnee_voisin)
+                if self.transition_respecte_sortie_maison(
+                    coordonnee,
+                    coordonnee_voisin,
+                ):
+                    voisins_accessibles.append(coordonnee_voisin)
+                else:
+                    pass
             else:
                 pass
 

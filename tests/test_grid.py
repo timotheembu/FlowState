@@ -106,7 +106,7 @@ def test_pose_et_suppression_route() -> None:
 
 
 def test_voisins_accessibles_et_traversabilite() -> None:
-    """Vérifie que seules les routes et bornes du trajet sont traversables."""
+    """Vérifie que seules les cases explicitement connectées sont accessibles."""
     grille: Grid = Grid(TAILLE_GRILLE_TEST, TAILLE_GRILLE_TEST)
     depart: tuple[int, int] = (INDICE_TEST_UN, INDICE_TEST_UN)
     arrivee: tuple[int, int] = (INDICE_TEST_TROIS, INDICE_TEST_UN)
@@ -115,6 +115,7 @@ def test_voisins_accessibles_et_traversabilite() -> None:
         INDICE_TEST_UN,
         INDICE_TEST_UN,
         COULEUR_ROUGE,
+        case_sortie=(INDICE_TEST_UN, INDICE_TEST_DEUX),
     )
     usine_arrivee: Usine = Usine(
         INDICE_TEST_UN,
@@ -130,9 +131,17 @@ def test_voisins_accessibles_et_traversabilite() -> None:
     grille.placer_maison(maison_depart)
     grille.placer_usine(usine_arrivee)
     grille.placer_maison(maison_obstacle)
-    grille.placer_route(INDICE_TEST_UN, INDICE_TEST_DEUX)
 
     case_route: tuple[int, int] = (INDICE_TEST_DEUX, INDICE_TEST_UN)
+    assert grille.connecter_cases(case_route, arrivee)
+
+    # Une route peut être posée juste à côté de maison_depart sans s'y connecter
+    assert grille.placer_route(INDICE_TEST_DEUX, INDICE_TEST_UN)
+    assert not grille.connecter_cases(
+        depart,
+        (INDICE_TEST_UN, INDICE_TEST_DEUX),
+    )
+
     voisins: list[tuple[int, int]] = grille.obtenir_voisins_accessibles(
         case_route,
         depart,
@@ -146,7 +155,7 @@ def test_voisins_accessibles_et_traversabilite() -> None:
 
 
 def test_voisins_diagonaux_et_gestion_stock_routes() -> None:
-    """Vérifie l'accès aux voisins diagonaux et la limite du stock de routes."""
+    """Vérifie la connexion diagonale explicite et la limite du stock de routes."""
     grille: Grid = Grid(
         TAILLE_GRILLE_TEST,
         TAILLE_GRILLE_TEST,
@@ -164,17 +173,24 @@ def test_voisins_diagonaux_et_gestion_stock_routes() -> None:
     assert not grille.placer_route(INDICE_TEST_TROIS, INDICE_TEST_TROIS)
     assert not grille.est_case_route(INDICE_TEST_TROIS, INDICE_TEST_TROIS)
 
-    # Les deux routes posées en (1,1) et (2,2) sont voisines en diagonale
-    depart: tuple[int, int] = (INDICE_TEST_ZERO, INDICE_TEST_ZERO)
-    arrivee: tuple[int, int] = (INDICE_TEST_TROIS, INDICE_TEST_TROIS)
+    # Sans appel à connecter_cases, deux routes adjacentes restent indépendantes
+    depart: tuple[int, int] = (INDICE_TEST_UN, INDICE_TEST_UN)
+    arrivee: tuple[int, int] = (INDICE_TEST_DEUX, INDICE_TEST_DEUX)
+    assert (
+        len(grille.obtenir_voisins_accessibles(depart, depart, arrivee))
+        == LONGUEUR_LISTE_VIDE
+    )
+
+    # Connexion explicite en diagonale entre (1,1) et (2,2)
+    assert grille.connecter_cases(depart, arrivee)
     voisins_un_un: list[tuple[int, int]] = grille.obtenir_voisins_accessibles(
-        (INDICE_TEST_UN, INDICE_TEST_UN),
+        depart,
         depart,
         arrivee,
     )
-    assert (INDICE_TEST_DEUX, INDICE_TEST_DEUX) in voisins_un_un
-    assert depart in voisins_un_un
+    assert arrivee in voisins_un_un
 
-    # Remboursement du stock à la suppression
+    # Remboursement du stock et nettoyage des arêtes à la suppression
     assert grille.supprimer_route(INDICE_TEST_DEUX, INDICE_TEST_DEUX)
     assert grille.stock_routes == UNITE_STOCK_ROUTE
+    assert not grille.sont_cases_connectees(depart, arrivee)

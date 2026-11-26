@@ -11,6 +11,7 @@ from src.config import (
     DISTANCE_MIN_ENTRE_BATIMENTS,
     DISTANCE_MIN_SECURITE_VOITURE,
     DIVISEUR_MOITIE,
+    ETAT_VOITURE_A_L_USINE,
     ETAT_VOITURE_ALLER_USINE,
     ETAT_VOITURE_RETOUR_MAISON,
     FACTEUR_ACCELERATION_APPARITION,
@@ -628,6 +629,11 @@ class GameEngine:
     def verifier_et_recalculer_itineraires(self) -> None:
         """Recalcule l'itinéraire aller ou retour si une route a été modifiée."""
         for voiture in self.voitures:
+            if voiture.etat == ETAT_VOITURE_A_L_USINE:
+                continue
+            else:
+                pass
+
             if not self.itineraire_restant_est_valide(voiture):
                 case_actuelle: tuple[int, int] = (
                     voiture.obtenir_case_actuelle()
@@ -669,17 +675,14 @@ class GameEngine:
                 pass
 
     def mettre_a_jour_deplacements_et_arrivees(self) -> None:
-        """Fait avancer les voitures et gère les transitions Usine -> Maison."""
+        """Fait avancer les voitures et gère l'arrêt à l'usine puis le retour."""
         voitures_en_route: list[Voiture] = []
 
         for voiture in self.voitures:
-            voiture.avancer(self.voitures)
-
-            if voiture.est_arrivee_destination_etape:
-                if voiture.etat == ETAT_VOITURE_ALLER_USINE:
+            if voiture.etat == ETAT_VOITURE_A_L_USINE:
+                attente_terminee: bool = voiture.mettre_a_jour_attente_usine()
+                if attente_terminee:
                     if voiture.usine_cible is not None:
-                        voiture.usine_cible.enregistrer_livraison()
-                        self.score = self.score + PAS_INCREMENT_COMPTEUR
                         depart_retour: tuple[int, int] = (
                             voiture.usine_cible.obtenir_coordonnee_grille()
                         )
@@ -697,14 +700,28 @@ class GameEngine:
                         )
                     )
                     voiture.lancer_trajet_retour(itineraire_retour)
-                    voitures_en_route.append(voiture)
                 else:
-                    if voiture.etat == ETAT_VOITURE_RETOUR_MAISON:
-                        voiture.garer_a_la_maison()
-                    else:
-                        pass
-            else:
+                    pass
                 voitures_en_route.append(voiture)
+            else:
+                voiture.avancer(self.voitures)
+
+                if voiture.est_arrivee_destination_etape:
+                    if voiture.etat == ETAT_VOITURE_ALLER_USINE:
+                        if voiture.usine_cible is not None:
+                            voiture.usine_cible.enregistrer_livraison()
+                            self.score = self.score + PAS_INCREMENT_COMPTEUR
+                        else:
+                            pass
+                        voiture.entrer_a_l_usine()
+                        voitures_en_route.append(voiture)
+                    else:
+                        if voiture.etat == ETAT_VOITURE_RETOUR_MAISON:
+                            voiture.garer_a_la_maison()
+                        else:
+                            pass
+                else:
+                    voitures_en_route.append(voiture)
 
         self.voitures = voitures_en_route
 

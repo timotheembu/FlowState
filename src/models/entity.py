@@ -9,6 +9,8 @@ from src.config import (
     DIRECTION_INITIALE_NULLE,
     DISTANCE_MIN_SECURITE_VOITURE,
     DISTANCE_NULLE,
+    DUREE_ARRET_USINE_FRAMES,
+    ETAT_VOITURE_A_L_USINE,
     ETAT_VOITURE_A_LA_MAISON,
     ETAT_VOITURE_ALLER_USINE,
     ETAT_VOITURE_RETOUR_MAISON,
@@ -32,6 +34,7 @@ class Maison:
         ligne: int,
         colonne: int,
         couleur: tuple[int, int, int],
+        case_sortie: tuple[int, int] | None = None,
     ) -> None:
         """Initialise une maison avec ses coordonnées, sa couleur et sa flotte.
 
@@ -39,14 +42,36 @@ class Maison:
             ligne: Indice de la ligne sur la grille.
             colonne: Indice de la colonne sur la grille.
             couleur: Tuple RGB représentant la couleur de la maison.
+            case_sortie: Coordonnée optionnelle (ligne, colonne) de l'unique
+                case de route rattachée à cette maison.
         """
         self.ligne: int = ligne
         self.colonne: int = colonne
         self.couleur: tuple[int, int, int] = couleur
+        self.case_sortie: tuple[int, int] | None = case_sortie
         self.flotte_voitures: list[Voiture] = []
         for _ in range(NB_VOITURES_PAR_MAISON):
             voiture_maison: Voiture = Voiture(maison_origine=self)
             self.flotte_voitures.append(voiture_maison)
+
+    def definir_case_sortie(
+        self,
+        case_sortie: tuple[int, int] | None,
+    ) -> None:
+        """Définit l'unique case de route (ligne, colonne) reliée à la maison.
+
+        Args:
+            case_sortie: Tuple (ligne, colonne) de la sortie, ou None.
+        """
+        self.case_sortie = case_sortie
+
+    def obtenir_case_sortie(self) -> tuple[int, int] | None:
+        """Retourne la coordonnée (ligne, colonne) de la route de sortie.
+
+        Returns:
+            Un tuple (ligne, colonne) ou None si non définie.
+        """
+        return self.case_sortie
 
     def obtenir_coordonnee_grille(self) -> tuple[int, int]:
         """Retourne la coordonnée (colonne, ligne) de la maison.
@@ -202,6 +227,11 @@ class Usine:
 class Voiture:
     """Représente un véhicule autonome effectuant des allers-retours."""
 
+    A_LA_MAISON: int = ETAT_VOITURE_A_LA_MAISON
+    ALLER_USINE: int = ETAT_VOITURE_ALLER_USINE
+    RETOUR_MAISON: int = ETAT_VOITURE_RETOUR_MAISON
+    A_L_USINE: int = ETAT_VOITURE_A_L_USINE
+
     def __init__(
         self,
         maison_origine: Maison,
@@ -226,6 +256,7 @@ class Voiture:
         self.indice_etape_cible: int = INDICE_PREMIERE_ETAPE_ITINERAIRE
         self.vitesse: float = VITESSE_VOITURE
         self.etat: int = ETAT_VOITURE_A_LA_MAISON
+        self.compteur_arret_usine: int = COMPTEUR_INITIAL_FRAMES
         self.est_arrivee_destination_etape: bool = False
 
         if itineraire is not None and usine_cible is not None:
@@ -236,13 +267,74 @@ class Voiture:
     def est_en_circulation(self) -> bool:
         """Indique si la voiture est actuellement sur la route (aller ou retour).
 
+        Une voiture garée à la maison ou en cours de déchargement à l'usine
+        n'est pas sur la chaussée et ne bloque pas la circulation extérieure.
+
         Returns:
-            True si la voiture n'est pas garée à la maison, False sinon.
+            True si la voiture roule vers l'usine ou vers la maison, False sinon.
         """
-        if self.etat != ETAT_VOITURE_A_LA_MAISON:
+        sur_route: bool = (
+            self.etat == ETAT_VOITURE_ALLER_USINE
+            or self.etat == ETAT_VOITURE_RETOUR_MAISON
+        )
+        if sur_route:
             return True
         else:
             return False
+
+    def est_stationnee_a_l_usine(self) -> bool:
+        """Indique si la voiture est actuellement immobilisée à l'usine.
+
+        Returns:
+            True si l'état est ETAT_VOITURE_A_L_USINE, False sinon.
+        """
+        if self.etat == ETAT_VOITURE_A_L_USINE:
+            return True
+        else:
+            return False
+
+    def entrer_a_l_usine(
+        self,
+        duree_frames: int = DUREE_ARRET_USINE_FRAMES,
+    ) -> None:
+        """Place la voiture en stationnement temporaire à l'usine cible.
+
+        Args:
+            duree_frames: Nombre de frames d'immobilisation à l'usine.
+        """
+        if self.usine_cible is not None:
+            self.position_colonne = float(self.usine_cible.colonne)
+            self.position_ligne = float(self.usine_cible.ligne)
+        else:
+            pass
+        self.direction_colonne = DIRECTION_INITIALE_NULLE
+        self.direction_ligne = DIRECTION_INITIALE_NULLE
+        self.itineraire = []
+        self.indice_etape_cible = COMPTEUR_INITIAL_FRAMES
+        self.etat = ETAT_VOITURE_A_L_USINE
+        self.compteur_arret_usine = duree_frames
+        self.est_arrivee_destination_etape = False
+
+    def mettre_a_jour_attente_usine(self) -> bool:
+        """Décrémente le minuteur d'arrêt à l'usine et indique s'il est écoulé.
+
+        Returns:
+            True si le temps d'arrêt à l'usine est terminé, False sinon.
+        """
+        if self.etat != ETAT_VOITURE_A_L_USINE:
+            return False
+        else:
+            if self.compteur_arret_usine > COMPTEUR_INITIAL_FRAMES:
+                self.compteur_arret_usine = (
+                    self.compteur_arret_usine - PAS_INCREMENT_COMPTEUR
+                )
+            else:
+                pass
+
+            if self.compteur_arret_usine <= COMPTEUR_INITIAL_FRAMES:
+                return True
+            else:
+                return False
 
     def obtenir_case_actuelle(self) -> tuple[int, int]:
         """Retourne la case entière (colonne, ligne) la plus proche.
@@ -370,6 +462,7 @@ class Voiture:
         self.itineraire = []
         self.indice_etape_cible = COMPTEUR_INITIAL_FRAMES
         self.etat = ETAT_VOITURE_A_LA_MAISON
+        self.compteur_arret_usine = COMPTEUR_INITIAL_FRAMES
         self.est_arrivee_destination_etape = False
 
     def calculer_distance_vers_point(

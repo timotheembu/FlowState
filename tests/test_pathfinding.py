@@ -27,14 +27,31 @@ from src.models.pathfinding import (
 def test_chemin_direct_maison_vers_usine() -> None:
     """Vérifie le calcul d'un chemin direct horizontal entre Maison et Usine."""
     grille: Grid = Grid(TAILLE_GRILLE_TEST, TAILLE_GRILLE_TEST)
-    maison: Maison = Maison(INDICE_TEST_DEUX, INDICE_TEST_UN, COULEUR_ROUGE)
+    maison: Maison = Maison(
+        INDICE_TEST_DEUX,
+        INDICE_TEST_UN,
+        COULEUR_ROUGE,
+        case_sortie=(INDICE_TEST_DEUX, INDICE_TEST_DEUX),
+    )
     usine: Usine = Usine(INDICE_TEST_DEUX, INDICE_TEST_CINQ, COULEUR_ROUGE)
     grille.placer_maison(maison)
     grille.placer_usine(usine)
 
-    grille.placer_route(INDICE_TEST_DEUX, INDICE_TEST_DEUX)
     grille.placer_route(INDICE_TEST_DEUX, INDICE_TEST_TROIS)
     grille.placer_route(INDICE_TEST_DEUX, INDICE_TEST_QUATRE)
+
+    grille.connecter_cases(
+        (INDICE_TEST_DEUX, INDICE_TEST_DEUX),
+        (INDICE_TEST_TROIS, INDICE_TEST_DEUX),
+    )
+    grille.connecter_cases(
+        (INDICE_TEST_TROIS, INDICE_TEST_DEUX),
+        (INDICE_TEST_QUATRE, INDICE_TEST_DEUX),
+    )
+    grille.connecter_cases(
+        (INDICE_TEST_QUATRE, INDICE_TEST_DEUX),
+        (INDICE_TEST_CINQ, INDICE_TEST_DEUX),
+    )
 
     depart: tuple[int, int] = (INDICE_TEST_UN, INDICE_TEST_DEUX)
     arrivee: tuple[int, int] = (INDICE_TEST_CINQ, INDICE_TEST_DEUX)
@@ -61,6 +78,7 @@ def test_contournement_obstacle_et_choix_chemin_plus_court() -> None:
         INDICE_TEST_DEUX,
         INDICE_TEST_UN,
         COULEUR_ROUGE,
+        case_sortie=(INDICE_TEST_UN, INDICE_TEST_DEUX),
     )
     usine_arrivee: Usine = Usine(
         INDICE_TEST_DEUX,
@@ -71,17 +89,19 @@ def test_contournement_obstacle_et_choix_chemin_plus_court() -> None:
         INDICE_TEST_DEUX,
         INDICE_TEST_DEUX,
         COULEUR_BLEUE,
+        case_sortie=(INDICE_TEST_TROIS, INDICE_TEST_DEUX),
     )
     grille.placer_maison(maison_depart)
     grille.placer_usine(usine_arrivee)
     grille.placer_maison(batiment_obstacle)
 
-    # Détour court par le haut (ligne 1)
-    grille.placer_route(INDICE_TEST_UN, INDICE_TEST_UN)
-    grille.placer_route(INDICE_TEST_UN, INDICE_TEST_DEUX)
-    grille.placer_route(INDICE_TEST_UN, INDICE_TEST_TROIS)
+    # Détour court par le haut via la case_sortie (ligne=1, col=2) -> Usine(ligne=2, col=3)
+    grille.connecter_cases(
+        (INDICE_TEST_DEUX, INDICE_TEST_UN),
+        (INDICE_TEST_TROIS, INDICE_TEST_DEUX),
+    )
 
-    # Détour plus long par le bas (lignes 3 et 4)
+    # Détour plus long par le bas (non relié à maison_depart)
     grille.placer_route(INDICE_TEST_TROIS, INDICE_TEST_UN)
     grille.placer_route(INDICE_TEST_QUATRE, INDICE_TEST_UN)
     grille.placer_route(INDICE_TEST_QUATRE, INDICE_TEST_DEUX)
@@ -107,15 +127,31 @@ def test_contournement_obstacle_et_choix_chemin_plus_court() -> None:
 def test_chemin_diagonal_plus_court_que_orthogonal() -> None:
     """Vérifie qu'A* privilégie une diagonale au lieu d'un détour orthogonal."""
     grille: Grid = Grid(TAILLE_GRILLE_TEST, TAILLE_GRILLE_TEST)
-    maison: Maison = Maison(INDICE_TEST_UN, INDICE_TEST_UN, COULEUR_ROUGE)
+    maison: Maison = Maison(
+        INDICE_TEST_UN,
+        INDICE_TEST_UN,
+        COULEUR_ROUGE,
+        case_sortie=(INDICE_TEST_DEUX, INDICE_TEST_DEUX),
+    )
     usine: Usine = Usine(INDICE_TEST_TROIS, INDICE_TEST_TROIS, COULEUR_ROUGE)
     grille.placer_maison(maison)
     grille.placer_usine(usine)
 
-    # Route centrale en diagonale (2, 2) + routes orthogonales (1, 2) et (2, 3)
-    grille.placer_route(INDICE_TEST_DEUX, INDICE_TEST_DEUX)
-    grille.placer_route(INDICE_TEST_UN, INDICE_TEST_DEUX)
+    # Détour orthogonal à partir de la case_sortie (2, 2) via (col=3, lig=2)
     grille.placer_route(INDICE_TEST_DEUX, INDICE_TEST_TROIS)
+    grille.connecter_cases(
+        (INDICE_TEST_DEUX, INDICE_TEST_DEUX),
+        (INDICE_TEST_TROIS, INDICE_TEST_DEUX),
+    )
+    grille.connecter_cases(
+        (INDICE_TEST_TROIS, INDICE_TEST_DEUX),
+        (INDICE_TEST_TROIS, INDICE_TEST_TROIS),
+    )
+    # Connexion directe en diagonale de (2, 2) vers l'usine (3, 3)
+    grille.connecter_cases(
+        (INDICE_TEST_DEUX, INDICE_TEST_DEUX),
+        (INDICE_TEST_TROIS, INDICE_TEST_TROIS),
+    )
 
     depart: tuple[int, int] = (INDICE_TEST_UN, INDICE_TEST_UN)
     arrivee: tuple[int, int] = (INDICE_TEST_TROIS, INDICE_TEST_TROIS)
@@ -132,20 +168,23 @@ def test_chemin_diagonal_plus_court_que_orthogonal() -> None:
 
 
 def test_reseau_deconnecte_ou_bloque() -> None:
-    """Vérifie qu'un réseau coupé retourne une liste vide sans erreur."""
+    """Vérifie que deux routes adjacentes non connectées ne permettent pas le passage."""
     grille: Grid = Grid(TAILLE_GRILLE_TEST, TAILLE_GRILLE_TEST)
-    maison: Maison = Maison(INDICE_TEST_UN, INDICE_TEST_UN, COULEUR_ROUGE)
-    usine: Usine = Usine(INDICE_TEST_UN, INDICE_TEST_SIX, COULEUR_ROUGE)
+    maison: Maison = Maison(
+        INDICE_TEST_UN,
+        INDICE_TEST_UN,
+        COULEUR_ROUGE,
+        case_sortie=(INDICE_TEST_UN, INDICE_TEST_DEUX),
+    )
+    usine: Usine = Usine(INDICE_TEST_UN, INDICE_TEST_QUATRE, COULEUR_ROUGE)
     grille.placer_maison(maison)
     grille.placer_usine(usine)
 
-    # Route incomplète (trou en colonne 4)
-    grille.placer_route(INDICE_TEST_UN, INDICE_TEST_DEUX)
+    # Route posée en (1, 3) adjacente à (1, 2) et à l'usine (1, 4), mais SANS connecter_cases
     grille.placer_route(INDICE_TEST_UN, INDICE_TEST_TROIS)
-    grille.placer_route(INDICE_TEST_UN, INDICE_TEST_CINQ)
 
     depart: tuple[int, int] = (INDICE_TEST_UN, INDICE_TEST_UN)
-    arrivee: tuple[int, int] = (INDICE_TEST_SIX, INDICE_TEST_UN)
+    arrivee: tuple[int, int] = (INDICE_TEST_QUATRE, INDICE_TEST_UN)
 
     chemin: list[tuple[int, int]] = trouver_chemin_a_etoile(
         grille,
@@ -159,10 +198,14 @@ def test_comportement_aux_limites_de_la_grille() -> None:
     """Vérifie le pathfinding sur les bords et hors des limites de la grille."""
     grille: Grid = Grid(TAILLE_GRILLE_TEST, TAILLE_GRILLE_TEST)
 
-    # Chemin sur le bord supérieur et droit jusqu'au coin (9, 0)
     depart_bord: tuple[int, int] = (INDICE_TEST_ZERO, INDICE_TEST_ZERO)
+    milieu_bord: tuple[int, int] = (INDICE_TEST_UN, INDICE_TEST_ZERO)
     arrivee_bord: tuple[int, int] = (INDICE_TEST_DEUX, INDICE_TEST_ZERO)
+    grille.placer_route(INDICE_TEST_ZERO, INDICE_TEST_ZERO)
     grille.placer_route(INDICE_TEST_ZERO, INDICE_TEST_UN)
+    grille.placer_route(INDICE_TEST_ZERO, INDICE_TEST_DEUX)
+    grille.connecter_cases(depart_bord, milieu_bord)
+    grille.connecter_cases(milieu_bord, arrivee_bord)
 
     chemin_bord: list[tuple[int, int]] = trouver_chemin_a_etoile(
         grille,

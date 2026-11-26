@@ -440,10 +440,14 @@ class Renderer:
             rayon_joint_pixels,
         )
 
-        for delta_colonne, delta_ligne in DIRECTIONS_HUIT_VOISINS:
-            voisin_ligne: int = ligne + delta_ligne
-            voisin_colonne: int = colonne + delta_colonne
-            if grille.est_case_connectable_route(
+        coordonnee_case: tuple[int, int] = (colonne, ligne)
+        voisins_connectes: set[tuple[int, int]] = (
+            grille.obtenir_voisins_connectes(coordonnee_case)
+        )
+        for voisin_colonne, voisin_ligne in voisins_connectes:
+            if grille.sont_cases_connectees_visuellement(
+                ligne,
+                colonne,
                 voisin_ligne,
                 voisin_colonne,
             ):
