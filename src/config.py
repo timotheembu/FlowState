@@ -25,6 +25,7 @@ CASE_ROUTE: int = 3
 COULEUR_FOND: tuple[int, int, int] = (245, 242, 235)
 COULEUR_GRILLE: tuple[int, int, int] = (220, 216, 208)
 COULEUR_ROUTE: tuple[int, int, int] = (85, 85, 90)
+COULEUR_BORDURE_ROUTE: tuple[int, int, int] = (55, 55, 60)
 
 # Palette de couleurs des entités (R, G, B)
 COULEUR_ROUGE: tuple[int, int, int] = (229, 75, 75)
@@ -53,9 +54,15 @@ EPAISSEUR_CONTOUR_USINE: int = 2
 MARGE_ROUTE: int = 10
 RAYON_NOEUD_ROUTE: int = 4
 EPAISSEUR_SEGMENT_DIAGONAL: int = 14
+LARGEUR_CHAUSSEE: int = 16
+BORDURE_CHAUSSEE: int = 2
 DECALAGE_VOISIN_NUL: int = 0
 DECALAGE_VOISIN_POSITIF: int = 1
 DECALAGE_VOISIN_NEGATIF: int = -1
+DISTANCE_CHEBYSHEV_ADJACENTE: int = 1
+TAILLE_MIN_HISTORIQUE_ELAGAGE: int = 2
+INDICE_DERNIERE_CASE_TRACEE: int = -1
+INDICE_AVANT_DERNIERE_CASE_TRACEE: int = -2
 
 # Stock initial et gestion de l'inventaire de routes
 STOCK_ROUTES_INITIAL: int = 25

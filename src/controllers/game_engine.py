@@ -263,37 +263,57 @@ class GameEngine:
 
     def faire_apparaitre_maison_isolee(
         self,
-        couleur: tuple[int, int, int],
+        couleur: tuple[int, int, int] | None = None,
     ) -> bool:
-        """Fait apparaître une maison seule dans la zone active.
+        """Fait apparaître une maison seule rattachée à une usine existante.
+
+        Si aucune usine n'existe encore sur la carte, force l'apparition
+        d'une paire (1 Maison + 1 Usine de même couleur) afin qu'aucune
+        maison n'apparaisse jamais avec une couleur orpheline.
 
         Args:
-            couleur: Couleur RGB de la maison (rattachée à une usine active).
+            couleur: Couleur RGB souhaitée (sera remplacée par une couleur
+                d'usine existante si aucune usine de cette couleur n'existe).
 
         Returns:
-            True si la maison a pu être placée, False sinon.
+            True si l'apparition a réussi, False sinon.
         """
-        case_maison: tuple[int, int] | None = (
-            self.choisir_case_libre_aleatoire(couleur)
+        couleurs_actives: list[tuple[int, int, int]] = (
+            self.obtenir_couleurs_usines_actives()
         )
-        if case_maison is not None:
-            ligne_maison, colonne_maison = case_maison
-            nouvelle_maison: Maison = Maison(
-                ligne_maison,
-                colonne_maison,
-                couleur,
+        if len(couleurs_actives) == LONGUEUR_LISTE_VIDE:
+            if couleur is not None:
+                couleur_paire: tuple[int, int, int] = couleur
+            else:
+                couleur_paire = self.choisir_couleur_nouvelle_paire()
+            return self.faire_apparaitre_paire_maison_usine(couleur_paire)
+        else:
+            if couleur is not None and couleur in couleurs_actives:
+                couleur_retenue: tuple[int, int, int] = couleur
+            else:
+                couleur_retenue = random.choice(couleurs_actives)
+
+            case_maison: tuple[int, int] | None = (
+                self.choisir_case_libre_aleatoire(couleur_retenue)
             )
-            est_placee: bool = self.grille.placer_maison(nouvelle_maison)
-            if est_placee and self.premiere_paire_apparue:
-                self.ajuster_cible_camera_apres_apparition(
+            if case_maison is not None:
+                ligne_maison, colonne_maison = case_maison
+                nouvelle_maison: Maison = Maison(
                     ligne_maison,
                     colonne_maison,
+                    couleur_retenue,
                 )
+                est_placee: bool = self.grille.placer_maison(nouvelle_maison)
+                if est_placee and self.premiere_paire_apparue:
+                    self.ajuster_cible_camera_apres_apparition(
+                        ligne_maison,
+                        colonne_maison,
+                    )
+                else:
+                    pass
+                return est_placee
             else:
-                pass
-            return est_placee
-        else:
-            return False
+                return False
 
     def faire_apparaitre_paire_maison_usine(
         self,

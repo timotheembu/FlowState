@@ -11,9 +11,12 @@ from src.config import (
     DECALAGE_VOISIN_NUL,
     DECALAGE_VOISIN_POSITIF,
     FACTEUR_ECHELLE_UNITE,
+    INDICE_AVANT_DERNIERE_CASE_TRACEE,
     INDICE_BOUTON_DROIT,
     INDICE_BOUTON_GAUCHE,
+    INDICE_DERNIERE_CASE_TRACEE,
     TAILLE_CASE,
+    TAILLE_MIN_HISTORIQUE_ELAGAGE,
 )
 from src.models.grid import Grid
 
@@ -24,6 +27,7 @@ class InputHandler:
     def __init__(self) -> None:
         """Initialise le gestionnaire d'entrées et la mémoire de tracé."""
         self.derniere_case_tracee: tuple[int, int] | None = None
+        self.historique_trace_courant: list[tuple[int, int]] = []
 
     def convertir_pixels_en_case(
         self,
@@ -74,6 +78,74 @@ class InputHandler:
             else:
                 return DECALAGE_VOISIN_NUL
 
+    def enregistrer_et_nettoyer_case_tracee(
+        self,
+        grille: Grid,
+        case_nouvelle: tuple[int, int],
+        a_ete_posee: bool,
+    ) -> None:
+        """Enregistre une case posée et supprime les coins parasites A->B->C.
+
+        Si la nouvelle case C est directement adjacente à l'avant-dernière
+        case A (distance de Chebyshev égale à 1) et que la case intermédiaire
+        B vient d'être posée dans ce même tracé sans connexion externe,
+        B est supprimée et le stock de routes est recrédité.
+
+        Args:
+            grille: Instance du modèle Grid à mettre à jour.
+            case_nouvelle: Coordonnée (colonne, ligne) de la case C actuelle.
+            a_ete_posee: True si la case C vient d'être posée dans ce tracé.
+        """
+        colonne_c, ligne_c = case_nouvelle
+        est_route_active: bool = grille.est_case_route(ligne_c, colonne_c)
+        if not a_ete_posee and not est_route_active:
+            return
+        else:
+            pass
+
+        if len(self.historique_trace_courant) >= TAILLE_MIN_HISTORIQUE_ELAGAGE:
+            case_b: tuple[int, int] = self.historique_trace_courant[
+                INDICE_DERNIERE_CASE_TRACEE
+            ]
+            case_a: tuple[int, int] = self.historique_trace_courant[
+                INDICE_AVANT_DERNIERE_CASE_TRACEE
+            ]
+            if case_nouvelle != case_b and case_nouvelle != case_a:
+                if grille.sont_cases_adjacentes_chebyshev(
+                    case_a,
+                    case_nouvelle,
+                ):
+                    cases_du_virage: list[tuple[int, int]] = [
+                        case_a,
+                        case_nouvelle,
+                    ]
+                    a_lien_externe: bool = (
+                        grille.a_connexion_externe_hors_ensemble(
+                            case_b,
+                            cases_du_virage,
+                        )
+                    )
+                    if not a_lien_externe:
+                        colonne_b, ligne_b = case_b
+                        grille.supprimer_route(ligne_b, colonne_b)
+                        self.historique_trace_courant.pop()
+                    else:
+                        pass
+                else:
+                    pass
+            else:
+                pass
+        else:
+            pass
+
+        if a_ete_posee:
+            if case_nouvelle not in self.historique_trace_courant:
+                self.historique_trace_courant.append(case_nouvelle)
+            else:
+                pass
+        else:
+            pass
+
     def interpoler_action_entre_cases(
         self,
         grille: Grid,
@@ -108,7 +180,19 @@ class InputHandler:
             if est_suppression:
                 grille.supprimer_route(ligne_courante, colonne_courante)
             else:
-                grille.placer_route(ligne_courante, colonne_courante)
+                a_ete_posee: bool = grille.placer_route(
+                    ligne_courante,
+                    colonne_courante,
+                )
+                case_etape: tuple[int, int] = (
+                    colonne_courante,
+                    ligne_courante,
+                )
+                self.enregistrer_et_nettoyer_case_tracee(
+                    grille,
+                    case_etape,
+                    a_ete_posee,
+                )
 
     def appliquer_action_clic_gauche(
         self,
@@ -119,7 +203,7 @@ class InputHandler:
         ligne_debut_camera: float = COORDONNEE_CAMERA_ORIGINE_FLOAT,
         taille_case_camera: float = float(TAILLE_CASE),
     ) -> None:
-        """Trace une route (avec interpolation diagonale) sous la souris.
+        """Trace une route (avec interpolation et nettoyage de virage).
 
         Args:
             grille: Instance du modèle Grid à modifier.
@@ -139,7 +223,12 @@ class InputHandler:
         case_actuelle: tuple[int, int] = (colonne, ligne)
 
         if self.derniere_case_tracee is None:
-            grille.placer_route(ligne, colonne)
+            a_ete_posee: bool = grille.placer_route(ligne, colonne)
+            self.enregistrer_et_nettoyer_case_tracee(
+                grille,
+                case_actuelle,
+                a_ete_posee,
+            )
         else:
             self.interpoler_action_entre_cases(
                 grille,
@@ -211,6 +300,7 @@ class InputHandler:
 
         if evenement.type == pygame.MOUSEBUTTONDOWN:
             self.derniere_case_tracee = None
+            self.historique_trace_courant = []
             position_x, position_y = evenement.pos
             if evenement.button == BOUTON_SOURIS_GAUCHE:
                 self.appliquer_action_clic_gauche(
@@ -236,6 +326,7 @@ class InputHandler:
         else:
             if evenement.type == pygame.MOUSEBUTTONUP:
                 self.derniere_case_tracee = None
+                self.historique_trace_courant = []
             else:
                 if evenement.type == pygame.MOUSEMOTION:
                     position_x, position_y = evenement.pos
@@ -252,6 +343,7 @@ class InputHandler:
                             taille_case_cam,
                         )
                     else:
+                        self.historique_trace_courant = []
                         if boutons_presses[INDICE_BOUTON_DROIT]:
                             self.appliquer_action_clic_droit(
                                 grille,

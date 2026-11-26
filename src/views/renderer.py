@@ -3,9 +3,11 @@
 import pygame
 
 from src.config import (
+    BORDURE_CHAUSSEE,
     COMPTEUR_INITIAL_LIVRAISONS,
     COORDONNEE_CAMERA_ORIGINE_FLOAT,
     COORDONNEE_ORIGINE,
+    COULEUR_BORDURE_ROUTE,
     COULEUR_CONTOUR_BATIMENT,
     COULEUR_FOND,
     COULEUR_FOND_BANDEAU_SCORE,
@@ -20,15 +22,12 @@ from src.config import (
     DECALAGE_SOUS_TITRE_DEFAITE_Y,
     DECALAGE_TITRE_DEFAITE_Y,
     DECALAGE_VOIE_DROITE_PIXELS,
-    DECALAGE_VOISIN_NEGATIF,
-    DECALAGE_VOISIN_POSITIF,
     DIMENSION_PIXEL_MINIMALE,
-    DIRECTIONS_DIAGONALES,
+    DIRECTIONS_HUIT_VOISINS,
     DIVISEUR_MOITIE,
     EPAISSEUR_CONTOUR_INTERFACE,
     EPAISSEUR_CONTOUR_USINE,
     EPAISSEUR_LIGNE_GRILLE,
-    EPAISSEUR_SEGMENT_DIAGONAL,
     ESPACEMENT_INDICATEUR_DEMANDE,
     FACTEUR_DOUBLE_MARGE,
     FACTEUR_ECHELLE_UNITE,
@@ -39,11 +38,11 @@ from src.config import (
     INCREMENT_BORNE_GRILLE,
     LARGEUR_BANDEAU_ROUTES,
     LARGEUR_BANDEAU_SCORE,
+    LARGEUR_CHAUSSEE,
     LARGEUR_FENETRE,
     LARGEUR_PANNEAU_DEFAITE,
     MARGE_INTERIEURE_DEMANDE,
     MARGE_MAISON,
-    MARGE_ROUTE,
     MARGE_USINE,
     NB_COLONNES_GRILLE_DEMANDES,
     POSITION_BANDEAU_ROUTES_X,
@@ -56,7 +55,6 @@ from src.config import (
     RAYON_CONTOUR_DEMANDE,
     RAYON_CONTOUR_VOITURE,
     RAYON_INDICATEUR_DEMANDE,
-    RAYON_NOEUD_ROUTE,
     RAYON_VOITURE,
     SEUIL_CRITIQUE_DEMANDES_USINE,
     TAILLE_CASE,
@@ -411,9 +409,11 @@ class Renderer:
         colonne_debut_camera: float,
         ligne_debut_camera: float,
         taille_case_camera: float,
-        facteur_zoom: float,
+        couleur_ruban: tuple[int, int, int],
+        largeur_ruban_pixels: int,
+        rayon_joint_pixels: int,
     ) -> None:
-        """Dessine les extensions reliant une route à ses voisins connectables.
+        """Trace un joint circulaire et les rubans vers les voisins connectés.
 
         Args:
             grille: Instance du modèle Grid contenant l'état des cases.
@@ -422,94 +422,10 @@ class Renderer:
             colonne_debut_camera: Colonne du bord gauche de la caméra.
             ligne_debut_camera: Ligne du bord supérieur de la caméra.
             taille_case_camera: Taille d'une case en pixels écran.
-            facteur_zoom: Facteur d'échelle actuel.
+            couleur_ruban: Couleur RGB de la passe actuelle (bordure/asphalte).
+            largeur_ruban_pixels: Épaisseur en pixels des segments de ligne.
+            rayon_joint_pixels: Rayon en pixels des joints circulaires.
         """
-        marge_route_zoom: int = self.mettre_a_echelle(
-            MARGE_ROUTE,
-            facteur_zoom,
-        )
-        marge_maison_zoom: int = self.mettre_a_echelle(
-            MARGE_MAISON,
-            facteur_zoom,
-        )
-        taille_case_int: int = int(round(taille_case_camera))
-        taille_route: int = (
-            taille_case_int - FACTEUR_DOUBLE_MARGE * marge_route_zoom
-        )
-        case_x, case_y = self.convertir_monde_en_ecran(
-            float(colonne),
-            float(ligne),
-            colonne_debut_camera,
-            ligne_debut_camera,
-            taille_case_camera,
-        )
-        centre_x: int = case_x + marge_route_zoom
-        centre_y: int = case_y + marge_route_zoom
-
-        ligne_haut: int = ligne + DECALAGE_VOISIN_NEGATIF
-        if grille.est_case_connectable_route(ligne_haut, colonne):
-            hauteur_extension_haut: int = (
-                marge_route_zoom + marge_maison_zoom
-            )
-            debut_y_haut: int = case_y - marge_maison_zoom
-            segment_haut: pygame.Rect = pygame.Rect(
-                centre_x,
-                debut_y_haut,
-                taille_route,
-                hauteur_extension_haut,
-            )
-            pygame.draw.rect(self.ecran, COULEUR_ROUTE, segment_haut)
-        else:
-            pass
-
-        ligne_bas: int = ligne + DECALAGE_VOISIN_POSITIF
-        if grille.est_case_connectable_route(ligne_bas, colonne):
-            debut_y_bas: int = centre_y + taille_route
-            hauteur_extension_bas: int = (
-                marge_route_zoom + marge_maison_zoom
-            )
-            segment_bas: pygame.Rect = pygame.Rect(
-                centre_x,
-                debut_y_bas,
-                taille_route,
-                hauteur_extension_bas,
-            )
-            pygame.draw.rect(self.ecran, COULEUR_ROUTE, segment_bas)
-        else:
-            pass
-
-        colonne_gauche: int = colonne + DECALAGE_VOISIN_NEGATIF
-        if grille.est_case_connectable_route(ligne, colonne_gauche):
-            largeur_extension_gauche: int = (
-                marge_route_zoom + marge_maison_zoom
-            )
-            debut_x_gauche: int = case_x - marge_maison_zoom
-            segment_gauche: pygame.Rect = pygame.Rect(
-                debut_x_gauche,
-                centre_y,
-                largeur_extension_gauche,
-                taille_route,
-            )
-            pygame.draw.rect(self.ecran, COULEUR_ROUTE, segment_gauche)
-        else:
-            pass
-
-        colonne_droite: int = colonne + DECALAGE_VOISIN_POSITIF
-        if grille.est_case_connectable_route(ligne, colonne_droite):
-            debut_x_droite: int = centre_x + taille_route
-            largeur_extension_droite: int = (
-                marge_route_zoom + marge_maison_zoom
-            )
-            segment_droite: pygame.Rect = pygame.Rect(
-                debut_x_droite,
-                centre_y,
-                largeur_extension_droite,
-                taille_route,
-            )
-            pygame.draw.rect(self.ecran, COULEUR_ROUTE, segment_droite)
-        else:
-            pass
-
         point_centre_case: tuple[int, int] = self.convertir_monde_en_ecran(
             float(colonne) + DECALAGE_CENTRE_CASE,
             float(ligne) + DECALAGE_CENTRE_CASE,
@@ -517,12 +433,14 @@ class Renderer:
             ligne_debut_camera,
             taille_case_camera,
         )
-        epaisseur_diagonale_zoom: int = self.mettre_a_echelle(
-            EPAISSEUR_SEGMENT_DIAGONAL,
-            facteur_zoom,
+        pygame.draw.circle(
+            self.ecran,
+            couleur_ruban,
+            point_centre_case,
+            rayon_joint_pixels,
         )
 
-        for delta_colonne, delta_ligne in DIRECTIONS_DIAGONALES:
+        for delta_colonne, delta_ligne in DIRECTIONS_HUIT_VOISINS:
             voisin_ligne: int = ligne + delta_ligne
             voisin_colonne: int = colonne + delta_colonne
             if grille.est_case_connectable_route(
@@ -540,13 +458,61 @@ class Renderer:
                 )
                 pygame.draw.line(
                     self.ecran,
-                    COULEUR_ROUTE,
+                    couleur_ruban,
                     point_centre_case,
                     point_centre_voisin,
-                    epaisseur_diagonale_zoom,
+                    largeur_ruban_pixels,
+                )
+                pygame.draw.circle(
+                    self.ecran,
+                    couleur_ruban,
+                    point_centre_voisin,
+                    rayon_joint_pixels,
                 )
             else:
                 pass
+
+    def dessiner_passe_ruban_routes(
+        self,
+        grille: Grid,
+        colonne_debut_camera: float,
+        ligne_debut_camera: float,
+        taille_case_camera: float,
+        couleur_ruban: tuple[int, int, int],
+        largeur_ruban_pixels: int,
+    ) -> None:
+        """Exécute une passe complète (bordure ou chaussée) sur le réseau.
+
+        Args:
+            grille: Instance du modèle Grid à parcourir.
+            colonne_debut_camera: Colonne du bord gauche de la caméra.
+            ligne_debut_camera: Ligne du bord supérieur de la caméra.
+            taille_case_camera: Taille d'une case en pixels écran.
+            couleur_ruban: Couleur RGB de la couche à tracer.
+            largeur_ruban_pixels: Largeur en pixels du ruban à tracer.
+        """
+        rayon_joint_pixels: int = largeur_ruban_pixels // DIVISEUR_MOITIE
+        if rayon_joint_pixels < DIMENSION_PIXEL_MINIMALE:
+            rayon_joint_pixels = DIMENSION_PIXEL_MINIMALE
+        else:
+            pass
+
+        for indice_ligne in range(grille.nb_lignes):
+            for indice_colonne in range(grille.nb_colonnes):
+                if grille.est_case_route(indice_ligne, indice_colonne):
+                    self.dessiner_connexions_case_route(
+                        grille,
+                        indice_ligne,
+                        indice_colonne,
+                        colonne_debut_camera,
+                        ligne_debut_camera,
+                        taille_case_camera,
+                        couleur_ruban,
+                        largeur_ruban_pixels,
+                        rayon_joint_pixels,
+                    )
+                else:
+                    pass
 
     def dessiner_routes(
         self,
@@ -556,7 +522,10 @@ class Renderer:
         taille_case_camera: float,
         facteur_zoom: float,
     ) -> None:
-        """Dessine tous les segments de route avec la transformation caméra.
+        """Dessine les routes sous forme d'un ruban continu en deux passes.
+
+        La première passe trace une bordure extérieure plus large, et la
+        seconde passe superpose le ruban d'asphalte avec joints circulaires.
 
         Args:
             grille: Instance du modèle Grid à parcourir.
@@ -565,52 +534,34 @@ class Renderer:
             taille_case_camera: Taille d'une case en pixels écran.
             facteur_zoom: Facteur d'échelle actuel.
         """
-        marge_route_zoom: int = self.mettre_a_echelle(
-            MARGE_ROUTE,
+        largeur_totale_bordure_base: int = (
+            LARGEUR_CHAUSSEE + FACTEUR_DOUBLE_MARGE * BORDURE_CHAUSSEE
+        )
+        largeur_bordure_zoom: int = self.mettre_a_echelle(
+            largeur_totale_bordure_base,
             facteur_zoom,
         )
-        taille_case_int: int = int(round(taille_case_camera))
-        taille_route: int = (
-            taille_case_int - FACTEUR_DOUBLE_MARGE * marge_route_zoom
-        )
-        rayon_noeud_zoom: int = self.mettre_a_echelle(
-            RAYON_NOEUD_ROUTE,
+        largeur_chaussee_zoom: int = self.mettre_a_echelle(
+            LARGEUR_CHAUSSEE,
             facteur_zoom,
         )
 
-        for indice_ligne in range(grille.nb_lignes):
-            for indice_colonne in range(grille.nb_colonnes):
-                if grille.est_case_route(indice_ligne, indice_colonne):
-                    case_x, case_y = self.convertir_monde_en_ecran(
-                        float(indice_colonne),
-                        float(indice_ligne),
-                        colonne_debut_camera,
-                        ligne_debut_camera,
-                        taille_case_camera,
-                    )
-                    noeud_route: pygame.Rect = pygame.Rect(
-                        case_x + marge_route_zoom,
-                        case_y + marge_route_zoom,
-                        taille_route,
-                        taille_route,
-                    )
-                    pygame.draw.rect(
-                        self.ecran,
-                        COULEUR_ROUTE,
-                        noeud_route,
-                        border_radius=rayon_noeud_zoom,
-                    )
-                    self.dessiner_connexions_case_route(
-                        grille,
-                        indice_ligne,
-                        indice_colonne,
-                        colonne_debut_camera,
-                        ligne_debut_camera,
-                        taille_case_camera,
-                        facteur_zoom,
-                    )
-                else:
-                    pass
+        self.dessiner_passe_ruban_routes(
+            grille,
+            colonne_debut_camera,
+            ligne_debut_camera,
+            taille_case_camera,
+            COULEUR_BORDURE_ROUTE,
+            largeur_bordure_zoom,
+        )
+        self.dessiner_passe_ruban_routes(
+            grille,
+            colonne_debut_camera,
+            ligne_debut_camera,
+            taille_case_camera,
+            COULEUR_ROUTE,
+            largeur_chaussee_zoom,
+        )
 
     def dessiner_voitures(
         self,

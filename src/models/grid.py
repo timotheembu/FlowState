@@ -6,6 +6,7 @@ from src.config import (
     CASE_USINE,
     CASE_VIDE,
     DIRECTIONS_HUIT_VOISINS,
+    DISTANCE_CHEBYSHEV_ADJACENTE,
     DISTANCE_MIN_ENTRE_BATIMENTS,
     DISTANCE_MIN_SECOURS_BATIMENT,
     INDICE_MINIMUM_GRILLE,
@@ -248,6 +249,72 @@ class Grid:
             return True
         else:
             return False
+
+    def sont_cases_adjacentes_chebyshev(
+        self,
+        case_a: tuple[int, int],
+        case_b: tuple[int, int],
+    ) -> bool:
+        """Vérifie si deux cases (col, lig) sont adjacentes (8 directions).
+
+        Deux cases sont directement adjacentes si leur distance de Chebyshev
+        est exactement égale à DISTANCE_CHEBYSHEV_ADJACENTE (1).
+
+        Args:
+            case_a: Coordonnée (colonne, ligne) de la première case.
+            case_b: Coordonnée (colonne, ligne) de la seconde case.
+
+        Returns:
+            True si la distance de Chebyshev vaut 1, False sinon.
+        """
+        colonne_a, ligne_a = case_a
+        colonne_b, ligne_b = case_b
+        ecart_colonne: int = abs(colonne_a - colonne_b)
+        ecart_ligne: int = abs(ligne_a - ligne_b)
+        if ecart_colonne > ecart_ligne:
+            distance_chebyshev: int = ecart_colonne
+        else:
+            distance_chebyshev = ecart_ligne
+
+        if distance_chebyshev == DISTANCE_CHEBYSHEV_ADJACENTE:
+            return True
+        else:
+            return False
+
+    def a_connexion_externe_hors_ensemble(
+        self,
+        case_cible: tuple[int, int],
+        cases_exclues: list[tuple[int, int]],
+    ) -> bool:
+        """Vérifie si une case est reliée à une route ou un bâtiment externe.
+
+        Args:
+            case_cible: Coordonnée (colonne, ligne) de la case à inspecter.
+            cases_exclues: Liste des coordonnées (colonne, ligne) à ignorer.
+
+        Returns:
+            True si au moins un voisin connectable n'est pas dans
+            cases_exclues, False sinon.
+        """
+        colonne_cible, ligne_cible = case_cible
+        for delta_colonne, delta_ligne in DIRECTIONS_HUIT_VOISINS:
+            voisin_colonne: int = colonne_cible + delta_colonne
+            voisin_ligne: int = ligne_cible + delta_ligne
+            coordonnee_voisin: tuple[int, int] = (
+                voisin_colonne,
+                voisin_ligne,
+            )
+            if coordonnee_voisin not in cases_exclues:
+                if self.est_case_connectable_route(
+                    voisin_ligne,
+                    voisin_colonne,
+                ):
+                    return True
+                else:
+                    pass
+            else:
+                pass
+        return False
 
     def est_case_traversable(
         self,

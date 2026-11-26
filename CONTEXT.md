@@ -47,7 +47,8 @@ mini-motorways-clone/
 - [x] **Étape 7 :** Gameplay complet : demandes générées par les Usines (plusieurs usines possibles par couleur), flotte limitée de voitures par Maison effectuant l'aller-retour, routes à double sens, score et défaite (Game Over) si une Usine est saturée.
 - [x] **Étape 8 :** Routes en diagonale (8 directions dans `Grid`, `InputHandler`, `Pathfinding` A* et `Renderer`) et stock limité de cases de route (remboursé à la suppression).
 - [x] **Étape 9 :** Caméra avec zoom progressif (départ zoomé au centre, dézoom au fur et à mesure de l'expansion) et courbe de difficulté progressive (spawns plus lents au début, bâtiments proches puis éloignés).
-- [ ] **Étape 10 :** Système temporel (horloge visuelle + défilement des jours) et choix hebdomadaire chaque lundi (pause et sélection entre deux lots de routes/bonus : pont, tunnel, feu, rond-point, autoroute).
-- [ ] **Étape 11 :** Mode Édition (touche dédiée pour activer/désactiver le mode construction ; tracé actif uniquement en mode édition et grille masquée en mode jeu normal).
-- [ ] **Étape 12 :** Génération et sélection de cartes avec obstacles naturels (`CASE_EAU`, `CASE_MONTAGNE`).
-- [ ] **Étape 13 :** Logique fonctionnelle complète des bonus spéciaux (Ponts sur eau, Tunnels sous montagne, Feux de circulation, Ronds-points, Autoroutes).
+- [x] **Étape 10 :** Raffinement gameplay & visuel : maison isolée obligatoirement rattachée à une couleur d'usine existante, rendu continu et fluide de l'asphalte, et suppression automatique des cases parasites dans les virages.
+- [ ] **Étape 11 :** Système temporel (horloge visuelle + défilement des jours) et choix hebdomadaire chaque lundi (pause et sélection entre deux lots de routes/bonus : pont, tunnel, feu, rond-point, autoroute).
+- [ ] **Étape 12 :** Mode Édition (touche dédiée pour activer/désactiver le mode construction ; tracé actif uniquement en mode édition et grille masquée en mode jeu normal).
+- [ ] **Étape 13 :** Génération et sélection de cartes avec obstacles naturels (`CASE_EAU`, `CASE_MONTAGNE`).
+- [ ] **Étape 14 :** Logique fonctionnelle complète des bonus spéciaux (Ponts sur eau, Tunnels sous montagne, Feux de circulation, Ronds-points, Autoroutes).
